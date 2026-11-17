@@ -1,15 +1,22 @@
-import json,time,tempfile
+import json,os,time,tempfile
 from pathlib import Path
 from datetime import datetime,timedelta,date,timezone
+from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright, expect
 import openpyxl
 out=Path(tempfile.mkdtemp(prefix='tdl-preview-evidence-'))
+base_url=os.environ.get('TDL_TEST_URL','http://127.0.0.1:5174/')
+local_origin=urlparse(base_url).netloc
 with sync_playwright() as p:
- b=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+ browser=os.environ.get('TDL_TEST_BROWSER')
+ launch={'executable_path':browser} if browser else ({'channel':'chrome'} if os.name=='nt' else {'executable_path':'/usr/bin/chromium'})
+ b=p.chromium.launch(headless=True,**launch)
  page=b.new_page(viewport={'width':1440,'height':1000});page.set_default_timeout(10000)
  page.clock.install(time=datetime(2026,11,17,12,tzinfo=timezone.utc))
  errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
- page.goto('http://127.0.0.1:5174',wait_until='networkidle')
+ remote_requests=[]
+ page.on('request',lambda request:remote_requests.append(request.url) if request.url.startswith(('http:', 'https:')) and urlparse(request.url).netloc!=local_origin else None)
+ page.goto(base_url,wait_until='networkidle')
  assert page.get_by_role('heading',name='Welcome back').count()==0
  page.get_by_role('button',name='Daily TDL',exact=True).click()
  def state():
@@ -37,6 +44,12 @@ with sync_playwright() as p:
  def finalize():
   click('Validate TDL');click('Finalize TDL');return wait(lambda s:s['days'][str(selected)]['status']=='finalized')
  click('Select all');click('Save attendance');wait(lambda s:s['days'].get(str(selected),{}).get('status')=='attendance_entered')
+ for title,kind in [('HO screenshare exclusions','ho'),('TDL mail exclusions','mail')]:
+  panel=page.locator('details').filter(has_text=title)
+  panel.locator('summary').click()
+  panel.get_by_role('checkbox',name='Poojitha Boinasetty L0',exact=True).check()
+  click('Save '+title)
+  wait(lambda s:s['days'][str(selected)].get('exclusions',{}).get(kind)==[5])
  click('Generate TDL');wait(lambda s:current(s,str(selected)) is not None)
  initial=queues();assert list(map(len,initial.values()))==[3,3,8]
  page.locator('.allocation-panel .queue-member').first.wait_for()
@@ -54,19 +67,33 @@ with sync_playwright() as p:
  expected=page.evaluate("async members=>(await import('./assets/allocation.js')).chooseSprt('2026-11-17','MSM',members,[]).id",q['MSM'])
  assert holder['id']==expected and holder['id']!=old['id']
  finalize();firstfinal=queues()
+ secondary=current(state(),str(selected))['secondary']
+ assert secondary['TDL mail sender']['level']=='L0' and secondary['TDL mail sender']['id']!=5
+ expect(page.locator('.duty-summary')).to_contain_text(secondary['TDL mail sender']['name'])
+ for queue in ('EDS','MSM'):
+  assert secondary[queue]['id'] in {member['id'] for member in firstfinal[queue]}-{5}
  page.reload(wait_until='networkidle');page.get_by_role('button',name='Daily TDL',exact=True).click();assert queues()==firstfinal
  with page.expect_download() as download:click('Export Excel')
  daily=out/'daily.xlsx';download.value.save_as(daily)
- ws=openpyxl.load_workbook(daily).active
+ assert current(state(),str(selected))['secondary']==secondary
+ daily_book=openpyxl.load_workbook(daily)
+ ws=daily_book.active
  rows=list(ws.iter_rows(min_row=6,max_row=19,values_only=True))
  assert {(r[0],r[1]) for r in rows}=={(q,e['name']) for q,es in firstfinal.items() for e in es}
+ assert any(r[:2]==('TDL mail sender',secondary['TDL mail sender']['name']) for r in ws.values)
+ assert list(daily_book['HO screenshare'].values)[1:]==[
+  (str(selected),queue,secondary[queue]['name'],secondary[queue]['level']) for queue in ('EDS','MSM')]
  click('Weekly view');assert page.get_by_role('button',name='Generate TDL',exact=True).count()==0
+ expect(page.locator('.week-card').filter(has_text=secondary['TDL mail sender']['name'])).to_have_count(1)
  with page.expect_download() as download:
   page.get_by_role('button',name='Export finalized days',exact=True).click()
  weekly=out/'weekly.xlsx';download.value.save_as(weekly)
- wr=list(openpyxl.load_workbook(weekly).active.iter_rows(min_row=4,values_only=True))
+ weekly_book=openpyxl.load_workbook(weekly)
+ wr=list(weekly_book.active.iter_rows(min_row=4,values_only=True))
  assert len(wr)==14 and {r[0] for r in wr}=={'2026-11-17'}
- click('Daily TDL');history=[];counts={};samples=[]
+ assert {r[6] for r in wr}=={secondary['TDL mail sender']['name']}
+ assert list(weekly_book['HO screenshare'].values)==list(daily_book['HO screenshare'].values)
+ click('Daily TDL');history=[];counts={};duty_counts={};samples=[]
  for week in range(12):
   for offset in range(3):
    day=date(2026,11,17)+timedelta(weeks=week,days=offset)
@@ -81,14 +108,56 @@ with sync_playwright() as p:
     eligible=[e for e in gen[q] if e['level']=='L0'];chosen=[e for e in eligible if e.get('sprt')==q+' SPRT'];assert len(chosen)==1
     assert counts.get((chosen[0]['id'],q),0)==min(counts.get((e['id'],q),0) for e in eligible)
     counts[chosen[0]['id'],q]=counts.get((chosen[0]['id'],q),0)+1
+   gen_duties=current(state(),str(day))['secondary']
+   for duty,holder in gen_duties.items():
+    excluded={5} if day==date(2026,11,17) else set()
+    candidates=gen[duty] if duty in ('EDS','MSM') else [e for _,e in flat if e['level']=='L0']
+    eligible={e['id'] for e in candidates}-excluded
+    assert holder['id'] in eligible
+    key=(duty,holder['id'])
+    assert duty_counts.get(key,0)==min(duty_counts.get((duty,eid),0) for eid in eligible)
+    duty_counts[key]=duty_counts.get(key,0)+1
    if day!=date(2026,11,17):finalize()
    history.extend(dict(date=str(day),employee_id=e['id'],level=e['level'],queue=q,sprt=e.get('sprt','')) for q,e in flat)
    if offset==0:samples.append({'date':str(day),'Backlogs':[e['name'] for e in gen['Backlogs']]})
  s=state();assert len(s['days'])==36
  assert all(d['status']=='finalized' for d in s['days'].values())
+ panel=page.locator('details').filter(has_text='TDL mail exclusions')
+ panel.locator('summary').click()
+ panel.get_by_role('checkbox',name='Poojitha Boinasetty L0',exact=True).check()
+ page.once('dialog',lambda dialog:dialog.dismiss())
+ click('Save TDL mail exclusions')
+ assert current(state(),str(selected))['status']=='finalized'
+ page.once('dialog',lambda dialog:dialog.accept())
+ click('Save TDL mail exclusions')
+ changed=wait(lambda s:s['days'][str(selected)]['status']=='attendance_entered')
+ assert current(changed,str(selected)) is None
+ assert changed['days'][str(selected)]['exclusions']['mail']==[5]
+ assert changed['days'][str(selected)]['generations'][-1]['status']=='superseded'
+ click('Generate TDL');wait(lambda s:current(s,str(selected)) is not None);finalize()
+ saved=state()
+ click('Local data')
+ with page.expect_download() as download:click('Download backup')
+ backup=out/'workspace.json';download.value.save_as(backup)
+ legacy=json.loads(backup.read_text(encoding='utf-8'))
+ for day in legacy['state']['days'].values():
+  day.pop('exclusions',None)
+  for generation in day['generations']:generation.pop('secondary',None)
+ legacy_backup=out/'legacy-workspace.json';legacy_backup.write_text(json.dumps(legacy),encoding='utf-8')
+ page.once('dialog',lambda dialog:dialog.accept())
+ page.locator('input[type=file]').set_input_files(legacy_backup)
+ wait(lambda s:'secondary' not in current(s,str(selected)))
+ click('Daily TDL')
+ expect(page.locator('.duty-summary')).to_contain_text('Not recorded')
+ click('Local data')
+ page.once('dialog',lambda dialog:dialog.accept())
+ page.locator('input[type=file]').set_input_files(backup)
+ wait(lambda s:s==saved)
+ click('Daily TDL')
  assert not errors,errors
+ assert not remote_requests,remote_requests
  page.screenshot(path=str(out/'final-allocation.png'),full_page=True)
  (out/'summary.json').write_text(json.dumps({'days':36,'assignments':504,'sprt_counts':{f'{eid}:{q}':count for (eid,q),count in counts.items()},'tuesdays':samples,'browser_errors':errors},indent=2))
  print('Evidence:',out)
- print('PASS: static app, no login; IndexedDB reload; same-date regeneration; manual SPRT replacement; daily/weekly workbooks; 36 finalized UI dates / 504 assignments; lowest eligible SPRT counts; no JS errors.')
+ print('PASS: 36 finalized UI dates, 504 primary assignments, SPRT and secondary duty rotation, saved exclusions, reload, workbook contents, and no remote requests or JS errors.')
  b.close()

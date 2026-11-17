@@ -54,7 +54,7 @@ test('12 empty-history Tuesdays vary all queues and reproduce with permuted inpu
     const [queues,warnings]=allocate(day,roster,[]);
     invariants(day,queues,roster,[]);assert.deepEqual(warnings,[]);
     assert.deepEqual(Object.values(queues).map(es=>es.length),[3,3,8]);
-    assert.deepEqual(signature(queues),signature(allocate(day,roster.toReversed(),[])[0]));
+    assert.deepEqual(signature(queues),signature(allocate(day,[...roster].reverse(),[])[0]));
     assert(roster.every(e=>!('sprt' in e)));
     for(const q of Object.keys(sets))sets[q].add(JSON.stringify(queues[q].map(e=>e.id).sort((a,b)=>a-b)));
   }
@@ -85,7 +85,7 @@ test('SPRT duties counted separately; names/order cannot control a date tie',()=
     const chosen=new Set();
     for(let w=0;w<24;w++){
       const day=addDays('2026-11-17',7*w),winner=chooseSprt(day,q,members,[]).id;chosen.add(winner);
-      assert.equal(chooseSprt(day,q,members.toReversed().map(e=>({...e,name:'renamed'})),[]).id,winner);
+      assert.equal(chooseSprt(day,q,[...members].reverse().map(e=>({...e,name:'renamed'})),[]).id,winner);
     }
     assert(chosen.size>=6);
   }
