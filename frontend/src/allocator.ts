@@ -33,10 +33,4 @@ export function excludedL0Ids(date: string, history: HistoryRow[]) {
     && priorMonday <= row.date && row.date < monday).map(row => row.employee_id))
 }
 
-export function restrictedConsecutiveEdsIds(date: string, employees: Employee[], history: HistoryRow[]) {
-  const previousDate = shiftDate(date, date === shiftDate(mondayOf(date), 1) ? -5 : -1)
-  const recent = new Set(history.filter(row => row.date === previousDate && row.queue === 'EDS')
-    .map(row => row.employee_id))
-  return new Set(employees.filter(employee => recent.has(employee.id) && !hasRestrictedQueues(employee))
-    .map(employee => employee.id))
-}
+export { restrictedConsecutiveEdsIds } from '../../assets/allocation.js'
