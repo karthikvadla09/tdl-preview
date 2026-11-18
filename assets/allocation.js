@@ -8,6 +8,17 @@ export function addDays(day, count) {
 const monday = day => addDays(day, -((new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7));
 const restricted = employee => employee.restrictions === 'EDS and Backlogs only';
 
+// Only consecutive EDS uses the covered roster identity; other duties remain personal.
+export function restrictedConsecutiveEdsIds(day, employees, history) {
+  const previous = addDays(day, new Date(`${day}T00:00:00Z`).getUTCDay() === 2 ? -5 : -1);
+  const recent = new Set(history.filter(row => row.date === previous && row.queue === 'EDS')
+    .map(row => row.eds_rotation_employee_id ?? row.employee_id));
+  return new Set(employees.filter(employee =>
+    recent.has(employee.eds_rotation_employee_id ?? employee.id) &&
+    !(restricted(employee) || employee.name.toLowerCase() === 'karthik vadla'))
+    .map(employee => employee.id));
+}
+
 // A stable, synchronous, mixed hash suits this entirely synchronous browser API.
 // Identity (not display name/order) and date define ties. Not a security function.
 function priority(day, id, task) {
@@ -40,10 +51,9 @@ export function allocate(day, input, inputHistory) {
   const employees = input.map(({sprt, ...employee}) => ({...employee})).sort((a, b) => a.id - b.id);
   const history = inputHistory.filter(row => row.date < day).slice().sort((a, b) => a.date.localeCompare(b.date));
   const start = monday(day), previousStart = addDays(start, -7), previousWeekday = addDays(day, -7);
-  const previousWorking = addDays(day, new Date(`${day}T00:00:00Z`).getUTCDay() === 2 ? -5 : -1);
   const excluded = new Set(history.filter(row => row.queue === 'Backlogs' && row.level === 'L0' && previousStart <= row.date && row.date < start).map(row => row.employee_id));
-  const consecutive = new Set(history.filter(row => row.queue === 'EDS' && row.date === previousWorking).map(row => row.employee_id));
-  const eligible = (employee, queue) => queue === 'EDS' ? employee.eds_access && (restricted(employee) || !consecutive.has(employee.id)) :
+  const consecutive = restrictedConsecutiveEdsIds(day, employees, history);
+  const eligible = (employee, queue) => queue === 'EDS' ? employee.eds_access && !consecutive.has(employee.id) :
     queue === 'Backlogs' ? employee.level !== 'L0' || !excluded.has(employee.id) : !restricted(employee);
   const eligibleL0 = Object.fromEntries(['EDS', 'Backlogs'].map(queue => [queue, employees.some(employee => employee.level === 'L0' && eligible(employee, queue))]));
   const byEmployee = new Map();

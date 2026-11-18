@@ -11,6 +11,7 @@ type Employee = {
   eds_access: boolean
   active: boolean
   restrictions: string
+  eds_rotation_employee_id?: number
 }
 type Member = Pick<Employee, 'id' | 'name' | 'level'> & { sprt: string }
 type Assignee = Omit<Member, 'sprt'>
@@ -152,10 +153,11 @@ function effectiveEmployees(state: State, day?: Day) {
   const swaps = day?.swaps ?? []
   const replaced = new Set(swaps.map((swap) => swap.original_employee_id))
   const employees = regularEmployees(state).filter((employee) => employee.active && !replaced.has(employee.id))
+    .map(employee => ({ ...employee, eds_rotation_employee_id: employee.id }))
   for (const swap of swaps) {
     employees.push({
       id: swap.substitute_employee_id, name: swap.substitute_name, level: swap.level,
-      eds_access: swap.eds_access, active: true, restrictions: temporary,
+      eds_access: swap.eds_access, active: true, restrictions: temporary, eds_rotation_employee_id: swap.original_employee_id,
     })
   }
   return employees
@@ -178,13 +180,14 @@ function historyRows(state: State) {
       .sort((a, b) => a.name.localeCompare(b.name)).map((member) => ({
         date, employee_id: member.id, employee: member.name, level: member.level, queue,
         sprt: member.sprt, status: 'finalized',
+        eds_rotation_employee_id: day.swaps.find(swap => swap.substitute_employee_id === member.id)?.original_employee_id ?? member.id,
       })))
   })
 }
 
 function priorHistory(state: State, date: string) {
   return historyRows(state).filter((row) => row.date < date).reverse()
-    .map(({ date, employee_id, level, queue, sprt }) => ({ date, employee_id, level, queue, sprt }))
+    .map(({ date, employee_id, level, queue, sprt, eds_rotation_employee_id }) => ({ date, employee_id, level, queue, sprt, eds_rotation_employee_id }))
 }
 
 function eligibleDuty(state: State, day: Day, generation: Generation, duty: Duty) {
@@ -374,7 +377,7 @@ function generate(state: State, date: string, day: Day | undefined) {
 function eligibility(state: State, date: string) {
   const history = priorHistory(state, date)
   const excluded = excludedL0Ids(date, history)
-  const recent = restrictedConsecutiveEdsIds(date, state.employees, history)
+  const recent = restrictedConsecutiveEdsIds(date, effectiveEmployees(state, state.days[date]), history)
   return (employee: Employee, queue: Queue): string | undefined => {
     if (queue === 'EDS' && !employee.eds_access) return `${employee.name} lacks EDS access.`
     if (queue === 'MSM' && hasRestrictedQueues(employee)) return `${employee.name} cannot be assigned to MSM.`
@@ -388,7 +391,7 @@ function eligibility(state: State, date: string) {
 function validate(state: State, date: string, day: Day, generation: Generation) {
   const present = presentIds(day)
   const seen = new Set<number>()
-  const employees = new Map(state.employees.map((employee) => [employee.id, employee]))
+  const employees = new Map(effectiveEmployees(state, day).map((employee) => [employee.id, employee]))
   const check = eligibility(state, date)
   const hard: string[] = []
   const warnings = generation.warnings.filter((warning) =>

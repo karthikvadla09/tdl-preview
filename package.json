@@ -1,1 +1,1 @@
-{"name":"tdl-preview","private":true,"type":"module","scripts":{"test":"node --test tests"},"engines":{"node":">=20"}}
+{"name":"tdl-preview","private":true,"type":"module","scripts":{"test":"node --test tests/allocation.test.js"},"engines":{"node":">=20"}}

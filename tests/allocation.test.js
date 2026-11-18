@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {allocate, chooseSprt, addDays} from '../assets/allocation.js';
+import {allocate, chooseSprt, addDays, restrictedConsecutiveEdsIds} from '../assets/allocation.js';
 import {originalAllocate} from './fixtures/original-allocation.js';
 const specs = [['Harshitha','L1',true],['Gajendran Ettikuppam','L1',true],['Yaswanth Sudagani','L1',true],['Lavanya Sai K','L0',false],['Poojitha Boinasetty','L0',true],['Chandrasekhar Chevula','L0',false],['Bhavana Bobburi','L1',false],['Vani Rayasam','L1',true],['Karthik Vadla','L1',true],['Abhilash.V','L0',true],['Inamdar Shrish','L0',false],['Pranav Patil','L0',false],['Om Shiv Tiwari','L0',false],['Sai Jayanth Koyya','L0',false]];
 const team = () => specs.map(([name,level,eds_access],i) => ({id:i+1,name,level,eds_access,restrictions:name==='Karthik Vadla'?'EDS and Backlogs only':''}));
@@ -105,4 +105,27 @@ test('same/future date duties do not influence regeneration and stale SPRT is cl
   const [queues]=allocate('2026-11-17',roster,history);
   assert.deepEqual(signature(queues),signature(allocate('2026-11-17',team(),[])[0]));
   assert.equal(Object.values(queues).flat().filter(e=>e.sprt).length,2);
+});
+
+
+test('consecutive EDS follows the covered identity across substitute changes and return', () => {
+  const original = team()[0];
+  const cover = {...original, id:99, name:'Today cover', restrictions:'Temporary substitute', eds_rotation_employee_id:original.id};
+  const roster = team().map(e => e.id === original.id ? cover : e);
+  for (const previous of [original.id, 98]) {
+    const history = [{date:'2026-11-17',employee_id:previous,eds_rotation_employee_id:original.id,level:'L1',queue:'EDS'}];
+    assert(restrictedConsecutiveEdsIds('2026-11-18',roster,history).has(99));
+    assert(restrictedConsecutiveEdsIds('2026-11-18',team(),history).has(original.id));
+    assert(!allocate('2026-11-18',roster,history)[0].EDS.some(e => e.id === 99));
+    assert(!restrictedConsecutiveEdsIds('2026-11-19',roster,history).has(99));
+  }
+});
+
+test('Thursday EDS carries to Tuesday but Karthik exception is personal', () => {
+  const original = team().find(e => e.name === 'Karthik Vadla');
+  const cover = {...original,id:99,name:'Cover',restrictions:'Temporary substitute',eds_rotation_employee_id:original.id};
+  const history = [{date:'2026-11-19',employee_id:98,eds_rotation_employee_id:original.id,level:'L1',queue:'EDS'}];
+  assert.deepEqual([...restrictedConsecutiveEdsIds('2026-11-24',[cover],history)],[99]);
+  assert.equal(restrictedConsecutiveEdsIds('2026-11-24',[original],history).size,0);
+  assert.equal(restrictedConsecutiveEdsIds('2026-12-01',[cover],history).size,0);
 });
