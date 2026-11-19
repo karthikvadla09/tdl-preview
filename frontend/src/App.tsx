@@ -128,7 +128,7 @@ function DutySummary({ secondary }: { secondary?: Gen['secondary'] }) {
  return <dl className="duty-summary">
   {['EDS', 'MSM', 'TDL mail sender'].map(duty => <div key={duty}>
    <dt>{duty === 'TDL mail sender' ? duty : `${duty} HO screenshare`}</dt>
-   <dd>{secondary ? secondary[duty]?.name ?? 'Unfilled' : 'Not recorded'}{secondary?.[duty] && <small> · {secondary[duty].level}</small>}</dd>
+   <dd>{secondary?.[duty] ? <><strong>{secondary[duty].name}</strong><small>{secondary[duty].level}</small></> : secondary ? 'Unfilled' : 'Not recorded'}</dd>
   </div>)}
  </dl>
 }
