@@ -113,6 +113,7 @@ with sync_playwright() as p:
     excluded={5} if day==date(2026,11,17) else set()
     candidates=gen[duty] if duty in ('EDS','MSM') else [e for _,e in flat if e['level']=='L0']
     eligible={e['id'] for e in candidates}-excluded
+    if duty=='TDL mail sender':eligible-={holder['id'] for q,holder in gen_duties.items() if q in ('EDS','MSM') and holder}
     assert holder['id'] in eligible
     key=(duty,holder['id'])
     assert duty_counts.get(key,0)==min(duty_counts.get((duty,eid),0) for eid in eligible)

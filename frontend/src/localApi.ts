@@ -1,6 +1,6 @@
 import { excludedL0Ids, hasRestrictedQueues, mondayOf, QUEUES, restrictedConsecutiveEdsIds, shiftDate } from './allocator'
 import { allocate, chooseSprt } from '../../assets/allocation.js'
-import { chooseDuty, MAIL } from './secondaryDuties.mjs'
+import { assignSecondary, MAIL } from './secondaryDuties.mjs'
 import type { Queue } from './allocator'
 
 type Level = 'L0' | 'L1'
@@ -192,6 +192,10 @@ function priorHistory(state: State, date: string) {
 
 function eligibleDuty(state: State, day: Day, generation: Generation, duty: Duty) {
   const excluded = new Set(day.exclusions?.[duty === MAIL ? 'mail' : 'ho'])
+  if (duty === MAIL) for (const queue of hoQueues) {
+    const holder = generation.secondary?.[queue]
+    if (holder) excluded.add(holder.id)
+  }
   const candidates = duty === MAIL
     ? effectiveEmployees(state, day).filter(employee => employee.level === 'L0')
     : generation.queues[duty]
@@ -208,9 +212,9 @@ function assignDuties(state: State, date: string, day: Day, generation: Generati
     })
   })
   const previous = preserve ? generation.secondary : undefined
-  generation.secondary = Object.fromEntries(duties.map(duty => [
-    duty, chooseDuty(date, duty, eligibleDuty(state, day, generation, duty), history, previous?.[duty]),
-  ])) as NonNullable<Generation['secondary']>
+  generation.secondary = assignSecondary(date, generation.queues,
+    effectiveEmployees(state, day).filter(employee => day.attendance[employee.id]),
+    day.exclusions ?? {}, history, previous) as NonNullable<Generation['secondary']>
 }
 
 function readDay(state: State, date: string) {
@@ -437,11 +441,11 @@ function validate(state: State, date: string, day: Day, generation: Generation) 
     const candidates = eligibleDuty(state, day, generation, duty)
     const holder = generation.secondary[duty]
     if (holder && !candidates.some(employee => employee.id === holder.id && employee.level === holder.level)) {
-      hard.push(`Invalid ${label} assignment.`)
+      hard.push(duty === MAIL ? 'Invalid TDL mail sender: choose a present, non-excluded L0 teammate who is not an HO screenshare holder.' : `Invalid ${label} assignment.`)
     } else if (!holder && candidates.length) {
       hard.push(`Invalid ${label} assignment: an eligible assignee is missing.`)
     } else if (!holder) {
-      warnings.push(`${label} is unfilled because no eligible teammate is available.`)
+      warnings.push(duty === MAIL ? 'TDL mail sender is unfilled; no present, non-excluded L0 teammate remains after HO screenshare assignments.' : `${label} is unfilled because no eligible teammate is available.`)
     }
   }
   return { hard, warnings: [...new Set([...warnings, ...hard])] }
