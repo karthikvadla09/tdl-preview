@@ -483,6 +483,45 @@ function adjust(state: State, date: string, day: Day, generation: Generation, in
   return generation
 }
 
+function adjustSecondary(state: State, date: string, day: Day | undefined, input: Record<string, unknown>) {
+  const generation = current(day)
+  if (!day || !generation || generation.status !== 'draft' || day.status === 'finalized') {
+    throw new Error('Generate a draft TDL before editing HO or mail assignments.')
+  }
+  if (generation.id !== input.generation_id) throw new Error('This TDL changed. Refresh before saving assignments.')
+  const fields = ['eds_ho_id', 'msm_ho_id', 'mail_sender_id'] as const
+  for (const field of fields) {
+    const value = input[field]
+    if (value !== null && (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0)) {
+      throw new Error('Supply a positive employee ID or null for every duty.')
+    }
+  }
+  const selected = { EDS: input.eds_ho_id, MSM: input.msm_ho_id, [MAIL]: input.mail_sender_id }
+  const roster = effectiveEmployees(state, day).filter(employee => day.attendance[employee.id])
+  const hoIds = new Set([selected.EDS, selected.MSM].filter(id => id !== null))
+  if (hoIds.size !== [selected.EDS, selected.MSM].filter(id => id !== null).length) {
+    throw new Error('EDS and MSM HO screenshare must be assigned to different people.')
+  }
+  const next = {} as NonNullable<Generation['secondary']>
+  for (const duty of duties) {
+    const candidates = duty === MAIL
+      ? roster.filter(employee => employee.level === 'L0' && !day.exclusions?.mail?.includes(employee.id) && !hoIds.has(employee.id))
+      : eligibleDuty(state, day, generation, duty)
+    const id = selected[duty]
+    const person = candidates.find(employee => employee.id === id)
+    if (id === null && candidates.length) throw new Error(`Choose an eligible ${dutyLabel(duty)} assignee.`)
+    if (id !== null && !person) throw new Error(duty === MAIL
+      ? 'TDL mail sender must be a present, non-excluded L0 teammate different from both HO holders.'
+      : `${duty} HO screenshare must be a present, non-excluded member of ${duty}.`)
+    next[duty] = person ? { id: person.id, name: person.name, level: person.level } : null
+  }
+  const before = generation.secondary
+  generation.secondary = next
+  generation.warnings = validate(state, date, day, generation).warnings
+  audit(day, 'secondary_assignments_updated', { generation_id: generation.id, before, after: input })
+  return generation
+}
+
 export async function localApi(path: string, init: RequestInit = {}): Promise<any> {
   const url = new URL(path, 'https://local.invalid')
   const [resource, id, action, item] = url.pathname.slice(1).split('/')
@@ -542,6 +581,7 @@ export async function localApi(path: string, init: RequestInit = {}): Promise<an
       requireConfirmation(day, confirmed, 'regenerating it')
       return generate(state, date, day)
     }
+    if (method === 'PUT' && action === 'secondary-assignments') return adjustSecondary(state, date, day, input)
     const generation = current(day)
     if (method === 'PUT' && action === 'assignments') {
       if (!day || !generation) throw new Error('Generate a draft TDL before adjusting assignments.')
