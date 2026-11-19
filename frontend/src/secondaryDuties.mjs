@@ -29,3 +29,26 @@ export function chooseDuty(date, duty, candidates, history, previous) {
 function snapshot({ id, name, level }) {
   return { id, name, level }
 }
+
+// Assign HO first, then a distinct mail sender. Move an HO holder only when
+// its queue can retain a valid replacement, preserving all filled HO duties.
+export function assignSecondary(date, queues, roster, exclusions, history, previous) {
+  const hoQueues = ['EDS', 'MSM']
+  const hoCandidates = queue => queues[queue].filter(e => !exclusions.ho?.includes(e.id))
+  const secondary = Object.fromEntries(hoQueues.map(queue => [queue,
+    chooseDuty(date, queue, hoCandidates(queue), history, previous?.[queue])]))
+  const mailCandidates = roster.filter(e => e.level === 'L0' && !exclusions.mail?.includes(e.id))
+  const occupied = employee => hoQueues.filter(queue => secondary[queue]?.id === employee.id)
+  secondary[MAIL] = chooseDuty(date, MAIL, mailCandidates.filter(e => !occupied(e).length), history, previous?.[MAIL])
+  if (!secondary[MAIL]) {
+    const alternatives = mailCandidates.filter(e => occupied(e).length &&
+      occupied(e).every(queue => hoCandidates(queue).some(other => other.id !== e.id)))
+    const reserved = chooseDuty(date, MAIL, alternatives, history)
+    if (reserved) {
+      for (const queue of hoQueues) secondary[queue] = chooseDuty(date, queue,
+        hoCandidates(queue).filter(e => e.id !== reserved.id), history, secondary[queue])
+      secondary[MAIL] = reserved
+    }
+  }
+  return secondary
+}

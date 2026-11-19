@@ -93,7 +93,7 @@ function DutyExclusions({ title, roster, saved, disabled, onSave }: {
  const changed = draft.length !== saved.length || draft.some(id => !saved.includes(id))
  return <details className="duty-exclusions">
   <summary>{title} ({saved.length})</summary>
-  <p>Exclusions apply to this date. Saving changes replaces any generated TDL.</p>
+  <p>{title === 'TDL mail exclusions' && 'The TDL mail sender is separate from both HO screenshare holders. No email is sent by this app. '}Exclusions apply to this date. Saving changes replaces any generated TDL.</p>
   <div className="duty-options">
    {roster.map(employee => <label key={employee.id}>
     <input type="checkbox" checked={draft.includes(employee.id)} disabled={disabled}
