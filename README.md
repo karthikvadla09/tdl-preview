@@ -27,3 +27,5 @@ Upstream `a805d92..a229565` adds draft editing for both HO screenshare holders a
 With Vite running on port 5173 and the static site on port 5184, run `python tests/secondary_editing_regression.py`. Set `TDL_TEST_URL` for another static URL. It checks atomic validation, stale/finalized protection, exclusions and absence, legitimate unfilled duties, UI editing, reload, narrow layout and daily/weekly Excel contents.
 
 Upstream `a229565..446cfa6` aligns HO and mail card typography. The shared Overview/Daily TDL duty summary uses consistent labels, assignee names and separate level lines, with wrapping for long names.
+
+Upstream `446cfa6..8a7f256` moves manual assignment controls into the queue cards. Draft moves appear immediately, and save errors appear beside the editor. Weekly queue counts wrap, and date exclusions show draft counts and mail attendance.

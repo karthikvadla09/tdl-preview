@@ -47,7 +47,7 @@ with sync_playwright() as p:
  for title,kind in [('HO screenshare exclusions','ho'),('TDL mail exclusions','mail')]:
   panel=page.locator('details').filter(has_text=title)
   panel.locator('summary').click()
-  panel.get_by_role('checkbox',name='Poojitha Boinasetty L0',exact=True).check()
+  panel.get_by_role('checkbox',name='Poojitha Boinasetty',exact=False).check()
   click('Save '+title)
   wait(lambda s:s['days'][str(selected)].get('exclusions',{}).get(kind)==[5])
  click('Generate TDL');wait(lambda s:current(s,str(selected)) is not None)
@@ -62,6 +62,8 @@ with sync_playwright() as p:
  swap=next(e for e in initial['Backlogs'] if e['level']=='L0')
  for name,q in [(old['name'],'Backlogs'),(swap['name'],'MSM')]:
   page.get_by_role('combobox',name='Queue for '+name,exact=True).click();page.get_by_role('option',name=q,exact=True).click()
+  expect(page.locator(f'.manual-editor .q-{q.lower()}').get_by_role('combobox',name='Queue for '+name,exact=True)).to_be_focused()
+ assert queues()==initial
  click('Save assignments');wait(lambda s:any(e['id']==old['id'] for e in current(s,str(selected))['queues']['Backlogs']))
  q=queues();holder=next(e for e in q['MSM'] if e.get('sprt'))
  expected=page.evaluate("async members=>(await import('./assets/allocation.js')).chooseSprt('2026-11-17','MSM',members,[]).id",q['MSM'])
@@ -125,7 +127,7 @@ with sync_playwright() as p:
  assert all(d['status']=='finalized' for d in s['days'].values())
  panel=page.locator('details').filter(has_text='TDL mail exclusions')
  panel.locator('summary').click()
- panel.get_by_role('checkbox',name='Poojitha Boinasetty L0',exact=True).check()
+ panel.get_by_role('checkbox',name='Poojitha Boinasetty',exact=False).check()
  page.once('dialog',lambda dialog:dialog.dismiss())
  click('Save TDL mail exclusions')
  assert current(state(),str(selected))['status']=='finalized'
