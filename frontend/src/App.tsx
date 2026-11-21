@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Activity, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Download, LayoutDashboard, ListChecks, Search, Settings2, Users, WandSparkles, X, AlertTriangle, ArrowUpRight, Clock3, Pencil, Save, RefreshCw, ChartNoAxesCombined } from 'lucide-react'
 
 import { localApi as api, exportBackup, restoreBackup } from './localApi'
@@ -17,9 +17,10 @@ const qOrder=['EDS','Backlogs','MSM']
 
 export default function App(){
  const [page,setPage]=useState('Overview'),[date,setDate]=useState(todayISO()),[employees,setEmployees]=useState<Employee[]>([]),[day,setDay]=useState<any>(null),[week,setWeek]=useState<Day[]>([]),[history,setHistory]=useState<any[]>([]),[analytics,setAnalytics]=useState<Record<string,any>>({}),[loading,setLoading]=useState(true),[error,setError]=useState(''),[toast,setToast]=useState(''),[saving,setSaving]=useState(false),[present,setPresent]=useState<number[]>([]),[query,setQuery]=useState(''),[teamFilter,setTeamFilter]=useState('All'),[hQueue,setHQueue]=useState('All'),[hLevel,setHLevel]=useState('All'),[hFrom,setHFrom]=useState(''),[hTo,setHTo]=useState(''),[hWeek,setHWeek]=useState(''),[edit,setEdit]=useState<Employee|null>(null),[adjust,setAdjust]=useState<Record<number,string>>({})
- const refresh=async()=>{setLoading(true);setError('');try{const [emps,d,w,h,a]=await Promise.all([api('/employees'),api(`/day/${date}`),api(`/week/${date}`),api('/history'),api('/analytics')]);setEmployees(emps);setDay(d);setPresent(d.present_ids||[]);setWeek(w.days);setHistory(h);setAnalytics(a);setAdjust(Object.fromEntries(Object.entries(d.generation?.queues||{}).flatMap(([q,ms]:any)=>ms.map((m:Member)=>[m.id,q]))))}catch(e:any){setError(e.message)}finally{setLoading(false)}}
+ const [assignmentError,setAssignmentError]=useState('')
+ const refresh=async()=>{setLoading(true);setAssignmentError('');setError('');try{const [emps,d,w,h,a]=await Promise.all([api('/employees'),api(`/day/${date}`),api(`/week/${date}`),api('/history'),api('/analytics')]);setEmployees(emps);setDay(d);setPresent(d.present_ids||[]);setWeek(w.days);setHistory(h);setAnalytics(a);setAdjust(Object.fromEntries(Object.entries(d.generation?.queues||{}).flatMap(([q,ms]:any)=>ms.map((m:Member)=>[m.id,q]))))}catch(e:any){setError(e.message)}finally{setLoading(false)}}
  useEffect(()=>{refresh()},[date]);useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),3000);return()=>clearTimeout(t)},[toast])
- const notify=async(fn:()=>Promise<any>,message:string)=>{setSaving(true);try{await fn();setToast(message);await refresh()}catch(e:any){setError(e.message)}finally{setSaving(false)}}
+ const notify=async(fn:()=>Promise<any>,message:string,onError:(message:string)=>void=setError)=>{setSaving(true);try{await fn();setToast(message);await refresh()}catch(e:any){onError(e.message)}finally{setSaving(false)}}
  const working=new Date(`${date}T12:00:00`).getDay();const validDay=[2,3,4].includes(working)
  const filteredEmployees=employees.filter(e=>(e.name.toLowerCase().includes(query.toLowerCase()))&&(teamFilter==='All'||(teamFilter==='EDS access'?e.eds_access:teamFilter===e.level)))
  const filteredHistory=history.filter(x=>(x.employee.toLowerCase().includes(query.toLowerCase())||x.queue.toLowerCase().includes(query.toLowerCase()))&&(hQueue==='All'||x.queue===hQueue)&&(hLevel==='All'||x.level===hLevel)&&(!hFrom||x.date>=hFrom)&&(!hTo||x.date<=hTo)&&(!hWeek||isoWeek(x.date)===hWeek))
@@ -57,7 +58,7 @@ export default function App(){
   await notify(async () => restoreBackup(await file.text()), 'Backup restored')
  }
  const saveEmployee=async(e:Employee)=>notify(()=>api(e.id?`/employees/${e.id}`:'/employees',{method:e.id?'PUT':'POST',body:JSON.stringify(e)}),e.id?'Employee updated':'Employee added')
- const saveAdjust=async()=>notify(()=>api(`/day/${date}/assignments`,{method:'PUT',body:JSON.stringify({assignments:Object.entries(adjust).map(([employee_id,queue])=>({employee_id:Number(employee_id),queue}))})}),'Assignments updated')
+ const saveAdjust=async()=>notify(()=>api(`/day/${date}/assignments`,{method:'PUT',body:JSON.stringify({assignments:Object.entries(adjust).map(([employee_id,queue])=>({employee_id:Number(employee_id),queue}))})}),'Assignments updated',setAssignmentError)
  const saveSecondary=async(values:{generation_id:number;eds_ho_id:number|null;msm_ho_id:number|null;mail_sender_id:number|null})=>notify(()=>api(`/day/${date}/secondary-assignments`,{method:'PUT',body:JSON.stringify(values)}),'HO and mail assignments updated')
  const toggle=(id:number)=>setPresent(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])
  return <div className="app-shell"><aside className="sidebar"><div className="brand"><div className="brand-icon"><ClipboardList size={19}/></div><div><b>TDL</b><span>TEAM OPERATIONS</span></div></div><button className="workspace"><span className="workspace-dot"/> SAP Incident Team <ChevronDown size={15}/></button><div className="nav-label">WORKSPACE</div><nav>{nav.map(([label,Icon])=><button key={label} aria-label={label} className={`nav-item ${page===label?'active':''}`} onClick={()=>setPage(label)}><Icon size={17}/><span>{label}</span>{label==='Daily TDL'&&<span className="nav-badge">1</span>}</button>)}</nav><div className="sidebar-bottom"><div className="status-card"><span className="live-dot"/><div><b>System operational</b><small>Stored in this browser</small></div><ArrowUpRight size={15}/></div><div className="profile"><div className="avatar avatar-dark">KT</div><div><b>Team coordinator</b><small>Administrator</small></div><Settings2 size={17}/></div></div></aside>
@@ -67,8 +68,8 @@ export default function App(){
  {loading?<div className="loading"><span className="spinner"/> Loading team data…</div>:<>
  {page==='Overview'&&<><div className="hero-card"><div className="hero-copy"><div className="hero-kicker"><span className="live-dot"/> YOUR TUESDAY–THURSDAY WORKSPACE</div><h2>A clearer day starts<br/>with a balanced team.</h2><p>Set today’s attendance and create a considered distribution across your incident queues.</p><button className="btn btn-light" onClick={()=>setPage('Daily TDL')}>Open daily TDL <ArrowUpRight size={16}/></button></div><div className="hero-art"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="hero-center"><ClipboardList size={35}/></div><div className="float-card float-a"><span className="mini-dot mint"/> EDS <b>03</b></div><div className="float-card float-b"><span className="mini-dot orange"/> Backlogs <b>03</b></div><div className="float-card float-c"><span className="mini-dot blue"/> MSM <b>08</b></div><div className="sparkle s1">✦</div><div className="sparkle s2">✳</div></div></div><div className="stats-grid"><Stat icon={<Users/>} label="Active team" value={String(employees.filter(e=>e.active).length).padStart(2,'0')} foot="Across all levels" tone="green"/><Stat icon={<Check/>} label="Present today" value={day?.attendance_saved?String(present.length).padStart(2,'0'):'—'} foot={day?.attendance_saved?'Attendance confirmed':'Awaiting attendance'} tone="blue"/><Stat icon={<ClipboardList/>} label="TDL status" value={statusText(status)} foot={day?.generation?`Generation ${day.generation.number}`:'For selected day'} tone="amber"/><Stat icon={<Activity/>} label="This week" value={`${week.filter(d=>d.status==='finalized').length} / 3`} foot="Days finalized" tone="purple"/></div><div className="section-head"><div><h2>This week</h2><p>Tuesday through Thursday · {week[0]?.date?new Date(`${week[0].date}T12:00:00`).toLocaleDateString('en-US',{month:'long',day:'numeric'}):''}</p></div><button className="text-button" onClick={()=>setPage('Weekly view')}>View weekly overview <ArrowUpRight size={15}/></button></div><div className="week-cards">{week.map(d=><WeekCard key={d.date} day={d} open={()=>{setDate(d.date);setPage('Daily TDL')}}/> )}</div><div className="section-head mt-28"><div><h2>Queue snapshot</h2><p>Latest generated allocation for {dateLabel(date)}</p></div><button className="text-button" onClick={()=>setPage('Daily TDL')}>Review allocation <ArrowUpRight size={15}/></button></div><QueueGrid generation={day?.generation}/>{day?.generation&&<DutySummary secondary={day.generation.secondary}/>}</>}
  {page==='Daily TDL'&&<><div className="workflow-bar"><div className="date-select"><label>SELECT A WORKING DATE</label><CalendarPicker value={date} onChange={v=>{setDate(v);setError('')}} label="Working date" workingDaysOnly/><small>{validDay?dateLabel(date):'TDL is available Tuesday through Thursday'}</small></div><div className="workflow-steps"><Step n="01" title="Attendance" done={day?.attendance_saved}/><div className="step-line"/><Step n="02" title="Generate" done={!!day?.generation}/><div className="step-line"/><Step n="03" title="Finalize" done={status==='finalized'}/></div><StatusPill status={status}/></div>{!validDay&&<div className="notice"><AlertTriangle size={17}/>Select a Tuesday, Wednesday, or Thursday to continue.</div>}
- <div className="daily-layout"><section className="panel attendance-panel"><div className="panel-head"><div><div className="panel-icon green-bg"><Users size={18}/></div></div><div className="panel-title"><h2>Today’s attendance</h2><p>Mark each active team member or their day substitute present or absent.</p></div><span className="subtle-count">{present.length} / {dailyRoster.length}</span></div><div className="attendance-summary"><div><span className="summary-dot present-dot"/><b>{present.length}</b><small>Present</small></div><div className="summary-divider"/><div><span className="summary-dot absent-dot"/><b>{dailyRoster.length-present.length}</b><small>Absent</small></div><div className="attendance-links"><button onClick={()=>setPresent(dailyRoster.map(e=>e.id))}>Select all</button><i/> <button onClick={()=>setPresent([])}>Clear all</button></div></div><TemporarySwapPanel date={date} employees={employees} swaps={day?.swaps||[]} disabled={!validDay||saving} onSave={saveSwap} onRemove={removeSwap}/><DutyExclusions key={`ho-${date}-${day?.exclusions?.ho}-${dailyRoster.map(e=>e.id)}`} title="HO screenshare exclusions" roster={dailyRoster} saved={day?.exclusions?.ho ?? []} disabled={saving || loading || day?.date !== date} onSave={ids=>saveExclusions('ho',ids)}/><DutyExclusions key={`mail-${date}-${day?.exclusions?.mail}-${dailyRoster.map(e=>e.id)}`} title="TDL mail exclusions" roster={dailyRoster.filter(e=>e.level==="L0"||day?.exclusions?.mail.includes(e.id))} saved={day?.exclusions?.mail ?? []} disabled={saving || loading || day?.date !== date} onSave={ids=>saveExclusions('mail',ids)}/><div className="employee-checklist">{dailyRoster.map(e=><label className={`check-row ${present.includes(e.id)?'checked':''}`} key={e.id}><input type="checkbox" checked={present.includes(e.id)} onChange={()=>toggle(e.id)}/><span className="custom-check">{present.includes(e.id)&&<Check size={12}/>}</span><span className="avatar">{initials(e.name)}</span><span className="person-name">{e.name}<small>{e.level} · {e.eds_access?'EDS access':'No EDS access'}</small></span><span className={`attendance-state ${present.includes(e.id)?'is-present':'is-absent'}`}>{present.includes(e.id)?'Present':'Absent'}</span></label>)}</div><button className="btn btn-primary full" disabled={!validDay||saving} onClick={()=>saveAttendance(status==='finalized')}>{saving?<span className="spinner light-spinner"/>:<Save size={16}/>} Save attendance</button>{status==='finalized'&&<p className="muted-note">Changing finalized attendance will supersede the published allocation and ask for confirmation.</p>}</section>
- <section className="panel allocation-panel"><div className="panel-head"><div className="panel-icon blue-bg"><WandSparkles size={18}/></div><div className="panel-title"><h2>Daily allocation</h2><p>One date at a time, using confirmed attendance.</p></div><StatusPill status={status}/></div><div className="allocation-intro"><div className="allocation-illustration"><div className="stack-circle"><ClipboardList size={25}/></div><span className="stack-dot d1"/><span className="stack-dot d2"/><span className="stack-dot d3"/></div><h3>{day?.generation?'Allocation ready for review':'Ready when you are'}</h3><p>{day?.generation?'Review queue assignments, warnings, then validate and finalize.':'Save attendance for this date to build a balanced queue plan.'}</p><button className="btn btn-primary" disabled={!validDay||!day?.attendance_saved||saving||present.length===0} onClick={generate}>{saving?<span className="spinner light-spinner"/>:<WandSparkles size={16}/>} {day?.generation?'Regenerate TDL':'Generate TDL'}</button>{!day?.attendance_saved&&<small className="helper">Attendance must be saved before generation.</small>}</div>{day?.generation&&<><div className="divider"/><QueueGrid generation={day.generation} compact/><DutySummary secondary={day.generation.secondary}/><SecondaryDutyEditor generation={day.generation} members={dailyRoster} presentIds={day.present_ids||[]} hoExcluded={day.exclusions?.ho||[]} mailExcluded={day.exclusions?.mail||[]} busy={saving} onSave={saveSecondary}/><div className="warning-list">{day.generation.warnings.map((w:string,i:number)=><div className="warning" key={i}><AlertTriangle size={15}/>{w}</div>)}</div><div className="action-row"><button className="btn btn-outline" onClick={async()=>{try{const v=await api(`/day/${date}/validate`,{method:'POST'});setToast(v.valid?'TDL validated':v.warnings.join(' · '));await refresh()}catch(e:any){setError(e.message)}}}><Check size={15}/> Validate TDL</button><button className="btn btn-outline" disabled={status==='finalized'} onClick={saveAdjust}><Pencil size={15}/> Save assignments</button><button className="btn btn-primary" disabled={status==='finalized'||saving} onClick={()=>notify(finalize,'TDL finalized')}>{status==='finalized'?<Check size={15}/>:<ClipboardList size={15}/>} {status==='finalized'?'Finalized':'Finalize TDL'}</button></div><div className="manual-editor"><h3><Settings2 size={15}/> Manual assignment adjustment</h3><p>Change a queue for a present employee. Eligibility and rotation constraints are checked when saving.</p>{qOrder.map(q=>(day.generation.queues[q]||[]).map((m:Member)=><div className="adjust-row" key={m.id}><span>{m.name}<small>{m.level}</small></span><StyledSelect label={`Queue for ${m.name}`} disabled={status==='finalized'} value={adjust[m.id]||q} onChange={value=>setAdjust(a=>({...a,[m.id]:value}))} options={qOrder.map(x=>({value:x,label:x}))}/></div>))}</div></>}</section></div></>}
+ <div className="daily-layout"><section className="panel attendance-panel"><div className="panel-head"><div><div className="panel-icon green-bg"><Users size={18}/></div></div><div className="panel-title"><h2>Today’s attendance</h2><p>Mark each active team member or their day substitute present or absent.</p></div><span className="subtle-count">{present.length} / {dailyRoster.length}</span></div><div className="attendance-summary"><div><span className="summary-dot present-dot"/><b>{present.length}</b><small>Present</small></div><div className="summary-divider"/><div><span className="summary-dot absent-dot"/><b>{dailyRoster.length-present.length}</b><small>Absent</small></div><div className="attendance-links"><button onClick={()=>setPresent(dailyRoster.map(e=>e.id))}>Select all</button><i/> <button onClick={()=>setPresent([])}>Clear all</button></div></div><TemporarySwapPanel date={date} employees={employees} swaps={day?.swaps||[]} disabled={!validDay||saving} onSave={saveSwap} onRemove={removeSwap}/><DutyExclusions key={`ho-${date}-${day?.exclusions?.ho}-${dailyRoster.map(e=>e.id)}`} title="HO screenshare exclusions" roster={dailyRoster} saved={day?.exclusions?.ho ?? []} disabled={saving || loading || day?.date !== date} onSave={ids=>saveExclusions('ho',ids)}/><DutyExclusions key={`mail-${date}-${day?.exclusions?.mail}-${dailyRoster.map(e=>e.id)}`} title="TDL mail exclusions" presentIds={present} roster={dailyRoster.filter(e=>e.level==="L0"||day?.exclusions?.mail.includes(e.id))} saved={day?.exclusions?.mail ?? []} disabled={saving || loading || day?.date !== date} onSave={ids=>saveExclusions('mail',ids)}/><div className="employee-checklist">{dailyRoster.map(e=><label className={`check-row ${present.includes(e.id)?'checked':''}`} key={e.id}><input type="checkbox" checked={present.includes(e.id)} onChange={()=>toggle(e.id)}/><span className="custom-check">{present.includes(e.id)&&<Check size={12}/>}</span><span className="avatar">{initials(e.name)}</span><span className="person-name">{e.name}<small>{e.level} · {e.eds_access?'EDS access':'No EDS access'}</small></span><span className={`attendance-state ${present.includes(e.id)?'is-present':'is-absent'}`}>{present.includes(e.id)?'Present':'Absent'}</span></label>)}</div><button className="btn btn-primary full" disabled={!validDay||saving} onClick={()=>saveAttendance(status==='finalized')}>{saving?<span className="spinner light-spinner"/>:<Save size={16}/>} Save attendance</button>{status==='finalized'&&<p className="muted-note">Changing finalized attendance will supersede the published allocation and ask for confirmation.</p>}</section>
+ <section className="panel allocation-panel"><div className="panel-head"><div className="panel-icon blue-bg"><WandSparkles size={18}/></div><div className="panel-title"><h2>Daily allocation</h2><p>One date at a time, using confirmed attendance.</p></div><StatusPill status={status}/></div><div className="allocation-intro"><div className="allocation-illustration"><div className="stack-circle"><ClipboardList size={25}/></div><span className="stack-dot d1"/><span className="stack-dot d2"/><span className="stack-dot d3"/></div><h3>{day?.generation?'Allocation ready for review':'Ready when you are'}</h3><p>{day?.generation?'Review queue assignments, warnings, then validate and finalize.':'Save attendance for this date to build a balanced queue plan.'}</p><button className="btn btn-primary" disabled={!validDay||!day?.attendance_saved||saving||present.length===0} onClick={generate}>{saving?<span className="spinner light-spinner"/>:<WandSparkles size={16}/>} {day?.generation?'Regenerate TDL':'Generate TDL'}</button>{!day?.attendance_saved&&<small className="helper">Attendance must be saved before generation.</small>}</div>{day?.generation&&<><div className="divider"/><QueueGrid generation={day.generation} compact/><DutySummary secondary={day.generation.secondary}/><SecondaryDutyEditor generation={day.generation} members={dailyRoster} presentIds={day.present_ids||[]} hoExcluded={day.exclusions?.ho||[]} mailExcluded={day.exclusions?.mail||[]} busy={saving} onSave={saveSecondary}/><div className="warning-list">{day.generation.warnings.map((w:string,i:number)=><div className="warning" key={i}><AlertTriangle size={15}/>{w}</div>)}</div><div className="action-row"><button className="btn btn-outline" onClick={async()=>{try{const v=await api(`/day/${date}/validate`,{method:'POST'});setToast(v.valid?'TDL validated':v.warnings.join(' · '));await refresh()}catch(e:any){setError(e.message)}}}><Check size={15}/> Validate TDL</button><button className="btn btn-outline" disabled={status==='finalized'} onClick={saveAdjust}><Pencil size={15}/> Save assignments</button><button className="btn btn-primary" disabled={status==='finalized'||saving} onClick={()=>notify(finalize,'TDL finalized')}>{status==='finalized'?<Check size={15}/>:<ClipboardList size={15}/>} {status==='finalized'?'Finalized':'Finalize TDL'}</button></div><ManualAssignmentEditor queues={day.generation.queues} assignments={adjust} disabled={status==='finalized'||saving} error={assignmentError} onMove={(id,queue)=>{setAssignmentError('');setAdjust(current=>({...current,[id]:queue}))}}/></>}</section></div></>}
  {page==='Local data'&&<section className="panel">
   <div className="simple-panel-head"><div><h2>Workspace backup</h2><p>Roster, attendance, and allocations are stored in this browser. Download a backup before clearing site data or switching browsers.</p></div></div>
   <div className="backup-actions">
@@ -87,19 +88,19 @@ export default function App(){
  {page==='Analytics'&&<><div className="analytics-summary"><Stat icon={<ClipboardList/>} label="Finalized assignments" value={String(history.length)} foot="Across saved TDLs" tone="green"/><Stat icon={<Users/>} label="Employees in history" value={String(Object.keys(analytics).length).padStart(2,'0')} foot="With finalized assignments" tone="blue"/><Stat icon={<ChartNoAxesCombined/>} label="Queue types" value="03" foot="EDS · Backlogs · MSM" tone="purple"/></div><div className="panel chart-panel"><div className="simple-panel-head"><div><h2>Queue distribution</h2><p>Finalized assignments by employee and primary queue.</p></div></div><WorkloadChart data={analytics}/></div><div className="panel table-panel"><div className="simple-panel-head"><div><h2>Workload by employee</h2><p>Distribution from finalized daily TDLs.</p></div></div><WorkloadTable data={analytics}/></div><div className="panel insight-panel"><div className="panel-icon amber-bg"><Activity size={18}/></div><div><h3>Fairness signals</h3><p>Use finalized allocation counts as a practical guide when reviewing daily assignments. Draft or superseded generations are excluded.</p></div></div></>}
  </>}</div></main>{toast&&<div className="toast"><Check size={16}/>{toast}<button onClick={()=>setToast('')}><X size={15}/></button></div>}{edit&&<EmployeeModal employee={edit} close={()=>setEdit(null)} save={async(e:Employee)=>{setEdit(null);await saveEmployee(e)}}/>}</div>
 }
-function DutyExclusions({ title, roster, saved, disabled, onSave }: {
- title: string; roster: Employee[]; saved: number[]; disabled: boolean; onSave: (ids: number[]) => void
+function DutyExclusions({ title, roster, saved, disabled, onSave, presentIds }: {
+ title: string; roster: Employee[]; presentIds?: number[]; saved: number[]; disabled: boolean; onSave: (ids: number[]) => void
 }) {
  const [draft, setDraft] = useState(saved)
  const changed = draft.length !== saved.length || draft.some(id => !saved.includes(id))
  return <details className="duty-exclusions">
-  <summary>{title} ({saved.length})</summary>
-  <p>{title === 'TDL mail exclusions' && 'The TDL mail sender is separate from both HO screenshare holders. No email is sent by this app. '}Exclusions apply to this date. Saving changes replaces any generated TDL.</p>
+  <summary>{title} ({draft.length})</summary>
+  <p>{title === 'TDL mail exclusions' && 'The TDL mail sender is separate from both HO screenshare holders. The assigned person sends the email. '}{title === 'HO screenshare exclusions' && 'Both L0 and L1 can give EDS or MSM handover. '}Exclusions apply to this date. Saving changes replaces any generated TDL and keeps attendance saved.</p>
   <div className="duty-options">
    {roster.map(employee => <label key={employee.id}>
     <input type="checkbox" checked={draft.includes(employee.id)} disabled={disabled}
      onChange={event => setDraft(event.target.checked ? [...draft, employee.id] : draft.filter(id => id !== employee.id))}/>
-    {employee.name} <small>{employee.level}</small>
+    {employee.name} <small>{presentIds && (presentIds.includes(employee.id) ? 'Present · ' : 'Absent · ')}{employee.level}</small>
    </label>)}
   </div>
   <button type="button" className="btn btn-outline" disabled={disabled || !changed} onClick={() => onSave(draft)}>
@@ -138,7 +139,78 @@ function Stat({icon,label,value,foot,tone}:any){return <div className="stat-card
 function Step({n,title,done}:any){return <div className={`step ${done?'step-done':''}`}><span>{done?<Check size={13}/>:n}</span>{title}</div>}
 function StatusPill({status}:any){const labels:any={not_started:'Not started',attendance_entered:'Attendance entered',tdl_generated:'TDL generated',finalized:'Finalized',updated:'Updated'};return <span className={`status-pill status-${status}`}>{status==='finalized'?<Check size={12}/>:<span className="status-pip"/>}{labels[status]||status}</span>}
 function QueueTag({queue}:any){return <span className={`queue-tag tag-${String(queue).toLowerCase()}`}><i/>{queue}</span>}
-function QueueGrid({generation,compact=false}:any){if(!generation)return <div className="empty-queue"><ClipboardList size={24}/><span>No allocation generated for this day yet.</span></div>;return <div className={`queue-grid ${compact?'compact':''}`}>{qOrder.map(q=>{const ms=generation.queues[q]||[];return <div className={`queue-card q-${q.toLowerCase()}`} key={q}><div className="queue-card-head"><div><QueueTag queue={q}/><small>{q==='EDS'?'Enterprise Data Services':q==='Backlogs'?'Backlog resolution':'Major Service Management'}</small></div><b>{String(ms.length).padStart(2,'0')}</b></div><div className="queue-members">{ms.map((m:Member)=><div className="queue-member" key={m.id}><span className="avatar">{initials(m.name)}</span><span>{m.name}<small>{m.level}{m.sprt&&<em> · {m.sprt}</em>}</small></span></div>)}</div>{!ms.length&&<small className="muted">No assignments</small>}</div>})}</div>}
+function QueueGrid({generation,compact=false}:any){if(!generation)return <div className="empty-queue"><ClipboardList size={24}/><span>No allocation generated for this day yet.</span></div>;return <QueueCards queues={generation.queues} compact={compact}/>}
+
+const queueDescriptions: Record<string, string> = {
+ EDS: 'Enterprise Data Services',
+ Backlogs: 'Backlog resolution',
+ MSM: 'Major Service Management',
+}
+const queueOptions = qOrder.map(queue => ({value: queue, label: queue}))
+
+function QueueCards({queues, compact, renderControl}: {
+ queues: Gen['queues']
+ compact: boolean
+ renderControl?: (member: Member, queue: string) => React.ReactNode
+}) {
+ return <div className={`queue-grid${compact ? ' compact' : ''}`}>
+  {qOrder.map(queue => {
+   const members = queues[queue] || []
+   return <div className={`queue-card q-${queue.toLowerCase()}`} key={queue}>
+    <div className="queue-card-head">
+     <div><QueueTag queue={queue}/><small>{queueDescriptions[queue]}</small></div>
+     <b>{String(members.length).padStart(2, '0')}</b>
+    </div>
+    <div className="queue-members">
+     {members.map(member => <div className="queue-member" key={member.id} data-member-id={member.id}>
+      <span className="avatar">{initials(member.name)}</span>
+      <span>{member.name}<small>{member.level}{!renderControl && member.sprt && <em> · {member.sprt}</em>}</small></span>
+      {renderControl?.(member, queue)}
+     </div>)}
+    </div>
+    {!members.length && <small className="muted">No assignments</small>}
+   </div>
+  })}
+ </div>
+}
+
+function ManualAssignmentEditor({queues, assignments, disabled, error, onMove}: {
+ error: string
+ queues: Gen['queues']
+ assignments: Record<number, string>
+ disabled: boolean
+ onMove: (id: number, queue: string) => void
+}) {
+ const editor = useRef<HTMLDivElement>(null)
+ const movedMember = useRef<number | null>(null)
+ const draftQueues: Gen['queues'] = Object.fromEntries(qOrder.map(queue => [queue, []]))
+ for (const queue of qOrder) {
+  for (const member of queues[queue] || []) {
+   draftQueues[assignments[member.id] ?? queue].push(member)
+  }
+ }
+
+ useLayoutEffect(() => {
+  if (movedMember.current === null) return
+  // Moving to a different card remounts the dropdown.
+  editor.current?.querySelector<HTMLButtonElement>(`[data-member-id="${movedMember.current}"] [role="combobox"]`)?.focus()
+  movedMember.current = null
+ }, [assignments])
+
+ return <div className="manual-editor" ref={editor}>
+  <h3><Settings2 size={15}/> Manual assignment adjustment</h3>
+  <p>Move employees between queues, then save assignments to update the allocation.</p>
+  {error && <div className="error-banner" role="alert"><AlertTriangle size={17}/><span>{error}</span></div>}
+  <QueueCards queues={draftQueues} compact renderControl={(member, queue) =>
+   <StyledSelect label={`Queue for ${member.name}`} value={queue} options={queueOptions} disabled={disabled}
+    onChange={next => {
+     if (next === queue) return
+     movedMember.current = member.id
+     onMove(member.id, next)
+    }}/>
+  }/>
+ </div>
+}
 function WeekCard({day,open,large=false}: {day: Day; open: () => void; large?: boolean}) {
  const date = new Date(day.date + 'T12:00:00')
  const gen = day.generation
