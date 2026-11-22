@@ -14,7 +14,7 @@ Run `npm test` (Node 20+, no dependencies). Browser verification must use a fres
 
 With the local server running on port 5174, run `python tests/browser_regression.py` (requires Playwright, Chrome on Windows or Chromium at `/usr/bin/chromium` on Linux, and openpyxl). Set `TDL_TEST_BROWSER` to override the browser executable. It uses an isolated browser profile, fixes the test clock, exercises 36 finalized dates through the UI and inspects exported workbooks. Evidence is saved to a new temporary directory printed by the script.
 
-The incremental sync from upstream `b500e5473ef8761030d3516bb60688681afcb835` to `5ba5af850f8ad8305d0ea9694672bd8757c6b0eb` carries consecutive EDS restrictions across temporary substitutes. Generation, manual adjustments, validation and finalization use the covered regular member's identity for this rule only. A returning member or a different cover is blocked after yesterday's cover worked EDS, including Thursday-to-Tuesday. Demo member's personal exception is not inherited by his substitute. Existing saved swaps supply the identity without changing backup format or rewriting historical snapshots; other fairness counts remain tied to actual assignees.
+The incremental sync from upstream `b500e5473ef8761030d3516bb60688681afcb835` to `5ba5af850f8ad8305d0ea9694672bd8757c6b0eb` carries consecutive EDS restrictions across temporary substitutes. Generation, manual adjustments, validation and finalization use the covered regular member's identity for this rule only. A returning member or a different cover is blocked after yesterday's cover worked EDS, including Thursday-to-Tuesday. The restricted member's configured exception is not inherited by his substitute. Existing saved swaps supply the identity without changing backup format or rewriting historical snapshots; other fairness counts remain tied to actual assignees.
 
 Focused substitute continuity integration tests: with `npm run dev -- --port 5173` running in `frontend/`, run `python tests/substitute_eds_regression.py` from the repository root. This uses a disposable browser context and the real local API/IndexedDB implementation served by Vite.
 
@@ -33,3 +33,5 @@ Upstream `446cfa6..8a7f256` moves manual assignment controls into the queue card
 ### Staffing before rotation
 
 Generation prioritizes EDS/Backlogs queue staffing, then two L1 members in each queue, then history-based rotation and date tie-breaking. Rotation history cannot outweigh feasible two-L1 coverage. If attendance or hard eligibility prevents full coverage, generation relaxes the pairing and reports a warning. Existing saved TDLs are unchanged until regenerated.
+
+Privacy: the public preview ships fictional demo member labels only. Real roster names must stay in browser-local workspace data and private backups; do not commit them. Existing browser workspaces are preserved, so replacing the published demo does not erase personal data saved on a user's device.

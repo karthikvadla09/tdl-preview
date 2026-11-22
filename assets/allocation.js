@@ -15,7 +15,7 @@ export function restrictedConsecutiveEdsIds(day, employees, history) {
     .map(row => row.eds_rotation_employee_id ?? row.employee_id));
   return new Set(employees.filter(employee =>
     recent.has(employee.eds_rotation_employee_id ?? employee.id) &&
-    !(restricted(employee) || employee.name.toLowerCase() === 'Demo Member 09'))
+    !restricted(employee))
     .map(employee => employee.id));
 }
 

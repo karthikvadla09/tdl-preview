@@ -28,3 +28,7 @@ Project policy for future syncs: omit upstream signup, login, and authentication
 - Run the preview allocator suite with Node 20 or newer. If Windows passes the test glob literally, run `node --test tests/allocation.test.js`. Add targeted regression coverage for behavior that existing tests miss.
 - Use a fresh browser context against a local static server. Verify the changed user flows, reload persistence, and the absence of backend requests. For allocation or history changes, exercise attendance, generation, manual edits, finalization, and rotation on a later date. For export changes, inspect the workbook sheets and cell values. Adapt the existing browser regression harness to the available Chromium path when needed. Use disposable fixture data for storage and backup tests.
 - Report the upstream ref and commit, the range or features examined, the preview changes, and test results or gaps. Record the upstream commit or range in the handoff or commit message when committing is requested. Describe any upstream behavior that needs a server. Leave publishing, pushing, and deployment to separately authorized actions.
+
+## Roster privacy
+
+Never copy real employee names or personal roster data from upstream into this public preview, fixtures, documentation or generated assets. Retain fictional demo member labels. Eligibility exceptions must use explicit configuration, never a real person's name. Rebuild and scan generated assets before publishing.

@@ -101,7 +101,7 @@ test('consecutive EDS follows the covered identity across substitute changes and
   }
 });
 
-test('Thursday EDS carries to Tuesday but Demo member exception is personal', () => {
+test('Thursday EDS carries to Tuesday but configured exception is personal', () => {
   const original = team().find(e => e.name === 'Demo Member 09');
   const cover = {...original,id:99,name:'Cover',restrictions:'Temporary substitute',eds_rotation_employee_id:original.id};
   const history = [{date:'2026-11-19',employee_id:98,eds_rotation_employee_id:original.id,level:'L1',queue:'EDS'}];
