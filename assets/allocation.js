@@ -93,11 +93,19 @@ export function allocate(day, input, inputHistory) {
     }
     states = next;
   }
+  // Queue staffing outranks L1 pairing; pairing outranks all rotation history.
+  // Rotation scores are nonpositive; bound their full possible range rather
+  // than choosing a fixed weight that long histories can eventually outweigh.
+  const rotationBound = 100 + employees.length * (106 * history.length + 53);
+  const pairingWeight = rotationBound + 1;
+  const staffingWeight = 4 * pairingWeight + rotationBound + 1;
   let best;
   for (const state of states.values()) {
     const [eds, backlogs, ...l1Counts] = state.staffing;
-    const score = state.score + [eds, backlogs].reduce((sum, count) => sum + 100 * count - 1000 * Math.max(0, 2 - count) - 100 * (3 - count), 0) -
-      45 * l1Counts.reduce((sum, count) => sum + Math.max(0, 2 - count), 0);
+    const staffingScore = [eds, backlogs].reduce((sum, count) => sum + 100 * count - 1000 * Math.max(0, 2 - count) - 100 * (3 - count), 0);
+    const pairingShortfall = l1Counts.slice(0, 2).reduce((sum, count) => sum + Math.max(0, 2 - count), 0);
+    const score = staffingWeight * staffingScore - pairingWeight * pairingShortfall +
+      state.score - 45 * Math.max(0, 2 - l1Counts[2]);
     const candidate = {...state, score};
     if (better(candidate, best)) best = candidate;
   }

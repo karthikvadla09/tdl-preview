@@ -29,3 +29,7 @@ With Vite running on port 5173 and the static site on port 5184, run `python tes
 Upstream `a229565..446cfa6` aligns HO and mail card typography. The shared Overview/Daily TDL duty summary uses consistent labels, assignee names and separate level lines, with wrapping for long names.
 
 Upstream `446cfa6..8a7f256` moves manual assignment controls into the queue cards. Draft moves appear immediately, and save errors appear beside the editor. Weekly queue counts wrap, and date exclusions show draft counts and mail attendance.
+
+### Staffing before rotation
+
+Generation prioritizes EDS/Backlogs queue staffing, then two L1 members in each queue, then history-based rotation and date tie-breaking. Rotation history cannot outweigh feasible two-L1 coverage. If attendance or hard eligibility prevents full coverage, generation relaxes the pairing and reports a warning. Existing saved TDLs are unchanged until regenerated.

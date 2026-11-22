@@ -110,6 +110,8 @@ with sync_playwright() as p:
     eligible=[e for e in gen[q] if e['level']=='L0'];chosen=[e for e in eligible if e.get('sprt')==q+' SPRT'];assert len(chosen)==1
     assert counts.get((chosen[0]['id'],q),0)==min(counts.get((e['id'],q),0) for e in eligible)
     counts[chosen[0]['id'],q]=counts.get((chosen[0]['id'],q),0)+1
+   for queue in ('EDS','Backlogs'):
+    assert sum(e['level']=='L1' for e in gen[queue])==2,(str(day),queue,gen[queue])
    gen_duties=current(state(),str(day))['secondary']
    for duty,holder in gen_duties.items():
     excluded={5} if day==date(2026,11,17) else set()

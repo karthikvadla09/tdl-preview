@@ -1,31 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {allocate, chooseSprt, addDays, restrictedConsecutiveEdsIds} from '../assets/allocation.js';
-import {originalAllocate} from './fixtures/original-allocation.js';
 const specs = [['Demo Member 01','L1',true],['Demo Member 02','L1',true],['Demo Member 03','L1',true],['Demo Member 04','L0',false],['Demo Member 05','L0',true],['Demo Member 06','L0',false],['Demo Member 07','L1',false],['Demo Member 08','L1',true],['Demo Member 09','L1',true],['Demo Member 10','L0',true],['Demo Member 11','L0',false],['Demo Member 12','L0',false],['Demo Member 13','L0',false],['Demo Member 14','L0',false]];
 const team = () => specs.map(([name,level,eds_access],i) => ({id:i+1,name,level,eds_access,restrictions:name==='Demo Member 09'?'EDS and Backlogs only':''}));
 const signature = queues => Object.fromEntries(Object.entries(queues).map(([q,es]) => [q,es.map(e=>[e.id,e.sprt||'']).sort((a,b)=>a[0]-b[0])]));
-function score(day, queues, history) {
-  let sum=0;
-  const monday=addDays(day,-((new Date(day+'T00:00:00Z').getUTCDay()+6)%7));
-  for(const [q,es] of Object.entries(queues)) {
-    if(q!=='MSM')sum+=100*es.length-1000*Math.max(0,2-es.length)-100*(3-es.length);
-    sum-=45*Math.max(0,2-es.filter(e=>e.level==='L1').length);
-    for(const e of es){
-      const rows=history.filter(r=>r.employee_id===e.id).sort((a,b)=>a.date.localeCompare(b.date));
-      sum-=5*rows.filter(r=>r.queue===q).length;
-      if(rows.at(-1)?.queue===q)sum-=8;
-      if(q==='Backlogs'){
-        sum-=35*rows.filter(r=>r.queue===q&&monday<=r.date&&r.date<day).length;
-        if(e.level==='L1'){
-          sum-=18*rows.filter(r=>r.queue===q&&addDays(monday,-7)<=r.date&&r.date<monday).length;
-          if(rows.some(r=>r.queue===q&&r.date===addDays(day,-7)))sum-=45;
-        }
-      }
-    }
-  }
-  return sum;
-}
 function invariants(day,queues,roster,history){
   const flat=Object.values(queues).flat();
   assert.equal(flat.length,roster.length);assert.equal(new Set(flat.map(e=>e.id)).size,roster.length);
@@ -61,13 +39,15 @@ test('12 empty-history Tuesdays vary all queues and reproduce with permuted inpu
   for(const teams of Object.values(sets))assert(teams.size>=6);
 });
 
-test('36 finalized dates preserve original primary optimum, eligibility and minimum SPRT counts',()=>{
+test('36 finalized dates preserve staffing, L1 pairing, eligibility and minimum SPRT counts',()=>{
   const history=[];const holders=new Set();
   for(let week=0;week<12;week++)for(let offset=0;offset<3;offset++){
     const day=addDays('2026-11-17',week*7+offset),roster=team();
     const [queues]=allocate(day,roster,history);
-    const [original]=originalAllocate(day,team(),history);
-    assert.equal(score(day,queues,history),score(day,original,history));
+    for (const q of ['EDS','Backlogs']) {
+      assert.equal(queues[q].length,3);
+      assert.equal(queues[q].filter(e=>e.level==='L1').length,2);
+    }
     invariants(day,queues,roster,history);
     holders.add(queues.MSM.find(e=>e.sprt)?.id);
     for(const [q,es]of Object.entries(queues))for(const e of es)history.push({date:day,employee_id:e.id,level:e.level,queue:q,sprt:e.sprt||''});
@@ -128,4 +108,23 @@ test('Thursday EDS carries to Tuesday but Demo member exception is personal', ()
   assert.deepEqual([...restrictedConsecutiveEdsIds('2026-11-24',[cover],history)],[99]);
   assert.equal(restrictedConsecutiveEdsIds('2026-11-24',[original],history).size,0);
   assert.equal(restrictedConsecutiveEdsIds('2026-12-01',[cover],history).size,0);
+});
+
+test('two-L1 EDS and Backlogs staffing outranks even long rotation history',()=>{
+  const roster=team();
+  const history=Array.from({length:200},(_,i)=>roster.filter(e=>e.level==='L1').map(e=>({date:addDays('2020-01-07',i),employee_id:e.id,level:e.level,queue:'Backlogs'}))).flat();
+  const [queues,warnings]=allocate('2026-11-24',roster,history);
+  for(const queue of ['EDS','Backlogs']){
+    assert.equal(queues[queue].length,3);
+    assert.equal(queues[queue].filter(e=>e.level==='L1').length,2);
+  }
+  assert(!warnings.some(w=>w.includes('pairing')));
+  assert.deepEqual(signature(queues),signature(allocate('2026-11-24',[...roster].reverse(),history)[0]));
+});
+
+test('L1 shortage relaxes pairing with a warning while preserving eligibility',()=>{
+  const roster=team().filter(e=>e.level==='L0');
+  const [queues,warnings]=allocate('2026-11-24',roster,[]);
+  invariants('2026-11-24',queues,roster,[]);
+  assert(warnings.some(w=>w.includes('Backlogs: L1 pairing')));
 });
