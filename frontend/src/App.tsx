@@ -100,7 +100,7 @@ function DutyExclusions({ title, roster, saved, disabled, onSave, presentIds }: 
    {roster.map(employee => <label key={employee.id}>
     <input type="checkbox" checked={draft.includes(employee.id)} disabled={disabled}
      onChange={event => setDraft(event.target.checked ? [...draft, employee.id] : draft.filter(id => id !== employee.id))}/>
-    {employee.name} <small>{presentIds && (presentIds.includes(employee.id) ? 'Present · ' : 'Absent · ')}{employee.level}</small>
+    <span className="duty-person"><span className="duty-person-name">{employee.name}</span><small>{presentIds && (presentIds.includes(employee.id) ? 'Present · ' : 'Absent · ')}{employee.level}</small></span>
    </label>)}
   </div>
   <button type="button" className="btn btn-outline" disabled={disabled || !changed} onClick={() => onSave(draft)}>

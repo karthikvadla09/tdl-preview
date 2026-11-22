@@ -99,3 +99,9 @@ details.duty-exclusions[open] {
  flex-wrap: wrap;
 }
 .week-info > div { min-width: 0; overflow-wrap: anywhere; }
+
+/* Keep names and levels together so level labels never become flex columns. */
+.duty-options input{flex:0 0 auto}
+.duty-options .duty-person{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.duty-options .duty-person-name{display:block;overflow-wrap:anywhere}
+.duty-options .duty-person small{display:block;white-space:nowrap;line-height:1.4}
