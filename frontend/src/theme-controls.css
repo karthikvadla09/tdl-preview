@@ -58,3 +58,59 @@ html[data-theme="high-contrast"] .styled-select-option{min-height:44px}
 @media(max-width:760px){html[data-theme] .styled-select-trigger,html[data-theme] .styled-select-option,html[data-theme] .calendar-trigger{min-height:44px}}
 
 html[data-theme] .styled-select-menu,html[data-theme] .calendar-popover{max-width:calc(100vw - 24px)}
+/* Typography follows the selected theme instead of unavailable font names. */
+html[data-theme]{--ui-font:Arial,Helvetica,sans-serif;--ui-meta-font:var(--ui-font);--ui-menu-size:12px;--ui-menu-weight:400;--ui-control-size:11px}
+html[data-theme="dark-minimal"]{--ui-font:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--ui-menu-size:12px}
+html[data-theme="high-contrast"]{--ui-menu-size:14px;--ui-menu-weight:600;--ui-control-size:13px}
+html[data-theme="swiss-grid"]{--ui-font:Helvetica,Arial,sans-serif;--ui-meta-font:ui-monospace,SFMono-Regular,Consolas,monospace;--ui-menu-size:12px;--ui-menu-weight:500;--ui-control-size:11px}
+html[data-theme] body,html[data-theme] button,html[data-theme] input,html[data-theme] select,html[data-theme] textarea,
+html[data-theme] h1,html[data-theme] h2,html[data-theme] h3,html[data-theme] .brand b,html[data-theme] .stat-card>b,
+html[data-theme] .week-date b,html[data-theme] .queue-card-head>b,html[data-theme] .calendar-header>b,
+html[data-theme] .theme-control,html[data-theme] .theme-picker-trigger,html[data-theme] .theme-picker-option{font-family:var(--ui-font)}
+html[data-theme] .breadcrumbs,html[data-theme] .hero-kicker{font-family:var(--ui-meta-font)}
+html[data-theme] .theme-picker-trigger,html[data-theme] .styled-select-trigger,html[data-theme] .calendar-trigger{font-size:var(--ui-control-size);line-height:1.4;height:auto}
+html[data-theme] .styled-select-option,html[data-theme] .theme-picker-option{font-family:var(--ui-font);font-size:var(--ui-menu-size);font-weight:var(--ui-menu-weight)}
+.theme-picker{width:178px}
+.theme-picker-menu{width:248px;overflow-y:auto;overscroll-behavior:contain;max-height:calc(100dvh - 180px)}
+.theme-picker-value{overflow:hidden;text-overflow:ellipsis}
+.theme-picker-option{--preview-bg:#fff;--preview-ink:#111827;--preview-accent:#ffe66d;--preview-font:Arial,Helvetica,sans-serif;--preview-weight:700;--preview-radius:3px;margin:4px 0;background:var(--preview-bg)!important;color:var(--preview-ink)!important;border:1px solid var(--picker-border);border-left:4px solid var(--preview-accent);border-radius:var(--preview-radius);min-height:58px;gap:10px}
+.theme-picker-option[data-theme-preview="dark-minimal"]{--preview-bg:#172027;--preview-ink:#d6e6ed;--preview-accent:#a2ccdc;--preview-font:ui-sans-serif,system-ui,sans-serif;--preview-weight:500;--preview-radius:5px}
+.theme-picker-option[data-theme-preview="monochrome"]{--preview-bg:#eee;--preview-ink:#292929;--preview-accent:#555;--preview-weight:400;--preview-radius:5px}
+.theme-picker-option[data-theme-preview="swiss-grid"]{--preview-bg:#f6f6f2;--preview-ink:#171717;--preview-accent:#d52b1e;--preview-font:Helvetica,Arial,sans-serif;--preview-weight:700;--preview-radius:0}
+.theme-option-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.theme-option-name{font-family:var(--preview-font);font-size:12px;font-weight:var(--preview-weight);line-height:1.4}
+.theme-option-copy small{font-family:var(--preview-font);font-size:10px;font-weight:400;line-height:1.4;color:inherit;opacity:.85}
+.theme-picker-option.is-active{outline:2px solid var(--picker-focus);outline-offset:-2px}
+.theme-picker-option[aria-selected=true]{box-shadow:inset 0 0 0 1px var(--preview-ink)}
+.theme-picker-option[data-theme-preview="swiss-grid"] .theme-option-name{text-transform:uppercase;letter-spacing:.04em}
+/* Keep content inside cards; allow only explicit data-table scrollers to scroll. */
+html[data-theme] .panel,html[data-theme] .queue-card,html[data-theme] .stat-card,html[data-theme] .week-card,
+html[data-theme] .panel-title,html[data-theme] .secondary-editor-fields>label,html[data-theme] .check-row .person-name{min-width:0}
+html[data-theme] .panel-title h2,html[data-theme] .person-name,html[data-theme] .table-person b{overflow-wrap:anywhere}
+html[data-theme] .styled-select-menu,html[data-theme] .calendar-popover{overflow-y:auto;overscroll-behavior:contain}
+html[data-theme] .modal-overlay{z-index:1000;overflow-y:auto;overscroll-behavior:contain}
+html[data-theme] .modal{max-width:100%;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow-y:auto;min-height:0}
+html[data-theme] .theme-picker-menu{z-index:60}
+@media(max-width:760px){.theme-picker{width:164px}.theme-picker-trigger{min-height:44px}}
+@media(max-width:700px){
+ html[data-theme] .team-table-panel{overflow:visible}
+ html[data-theme] .team-table-panel table{display:block;min-width:0;width:100%;table-layout:fixed}
+ html[data-theme] .team-table-panel thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ html[data-theme] .team-table-panel tbody{display:block}
+ html[data-theme] .team-table-panel tr{display:block;padding:16px;border-bottom:1px solid var(--picker-border)}
+ html[data-theme] .team-table-panel tr:last-child{border-bottom:0}
+ html[data-theme] .team-table-panel td{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;align-items:center;white-space:normal;width:100%;padding:8px 0;border:0}
+ html[data-theme] .team-table-panel td:first-child{display:block;padding-top:0;padding-bottom:12px}
+ html[data-theme] .team-table-panel td:last-child{display:flex;justify-content:flex-end;padding-bottom:0}
+ html[data-theme] .team-table-panel td:nth-child(2)::before{content:'Level'}
+ html[data-theme] .team-table-panel td:nth-child(3)::before{content:'EDS access'}
+ html[data-theme] .team-table-panel td:nth-child(4)::before{content:'Eligibility'}
+ html[data-theme] .team-table-panel td:nth-child(5)::before{content:'Status'}
+ html[data-theme] .team-table-panel td::before{font-size:11px;color:var(--picker-ink);opacity:.8}
+ html[data-theme] .team-table-panel .table-person{min-width:0}
+ html[data-theme] .team-table-panel .table-person b{font-size:13px;line-height:1.5}
+ html[data-theme] .team-table-panel td>span{justify-self:start;max-width:100%;overflow-wrap:anywhere}
+ html[data-theme] .team-table-panel .icon-button{min-width:44px;min-height:44px}
+}
+html[data-theme] .queue-member>span:not(.avatar){min-width:0;overflow-wrap:anywhere}
+html[data-theme] .styled-select-option{white-space:normal;overflow-wrap:anywhere}

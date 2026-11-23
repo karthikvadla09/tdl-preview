@@ -1,15 +1,16 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
+import { usePopoverBounds } from './usePopoverBounds'
 import highContrast from './themes/high-contrast.css?inline'
 import darkMinimal from './themes/dark-minimal.css?inline'
 import monochrome from './themes/monochrome.css?inline'
 import swissGrid from './themes/swiss.css?inline'
 
 export const themeOptions = [
-  { value: 'high-contrast', label: 'High Contrast' },
-  { value: 'dark-minimal', label: 'Dark Minimal' },
-  { value: 'monochrome', label: 'Monochrome' },
-  { value: 'swiss-grid', label: 'Swiss Grid' },
+  { value: 'high-contrast', label: 'High Contrast', detail: 'Bold text · yellow accents' },
+  { value: 'dark-minimal', label: 'Dark Minimal', detail: 'Charcoal · cool blue' },
+  { value: 'monochrome', label: 'Monochrome', detail: 'Grayscale · understated' },
+  { value: 'swiss-grid', label: 'Swiss Grid', detail: 'Sharp type · red accents' },
 ] as const
 export type Theme = typeof themeOptions[number]['value']
 const storageKey = 'tdl-appearance-theme'
@@ -54,6 +55,10 @@ export function ThemePicker({ theme, onChange }: { theme: Theme; onChange: (them
   const root = useRef<HTMLDivElement>(null)
   const id = useId()
   const selected = themeOptions.findIndex(option => option.value === theme)
+  usePopoverBounds(root, open, '.theme-picker-menu')
+  useLayoutEffect(() => {
+    if (open) root.current?.querySelector(`[data-theme-preview="${themeOptions[active].value}"]`)?.scrollIntoView({ block: 'nearest' })
+  }, [open, active])
   useEffect(() => {
     if (!open) return
     const dismiss = (event: PointerEvent) => {
@@ -93,11 +98,11 @@ export function ThemePicker({ theme, onChange }: { theme: Theme; onChange: (them
       </button>
       {open && <div className="theme-picker-menu" id={`${id}-options`} role="listbox" aria-label="Website theme">
         {themeOptions.map((option, index) => <div key={option.value} id={`${id}-option-${index}`}
-          role="option" aria-selected={option.value === theme}
+          role="option" aria-label={option.label} aria-selected={option.value === theme} data-theme-preview={option.value}
           className={`theme-picker-option${index === active ? ' is-active' : ''}`}
           onPointerMove={() => setActive(index)} onMouseDown={event => event.preventDefault()} onClick={() => choose(index)}>
           <span className={`theme-swatch theme-swatch-${option.value}`} aria-hidden="true"/>
-          <span>{option.label}</span>
+          <span className="theme-option-copy"><span className="theme-option-name">{option.label}</span><small aria-hidden="true">{option.detail}</small></span>
           {option.value === theme && <Check size={14} aria-hidden="true"/>}
         </div>)}
       </div>}

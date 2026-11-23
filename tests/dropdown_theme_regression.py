@@ -31,12 +31,12 @@ with sync_playwright() as p:
    select_theme(theme)
    trigger=page.get_by_role('combobox',name='Website theme');trigger.click()
    menu=page.get_by_role('listbox',name='Website theme');assert_surface(menu)
-   assert menu.get_by_role('option',selected=True).inner_text()==labels[theme]
+   assert menu.get_by_role('option',selected=True).get_attribute('aria-label')==labels[theme]
    assert menu.get_by_role('option').count()==4
    rect=menu.bounding_box();assert rect['x']>=0 and rect['x']+rect['width']<=width+1
    if width==1440:menu.screenshot(path=str(out/f'{theme}-menu.png'))
    trigger.press('Escape');expect(trigger).to_be_focused();expect(menu).not_to_be_visible()
-   trigger.click();page.locator('.page-heading h1').click();expect(menu).not_to_be_visible()
+   trigger.click();page.locator('.brand').click();expect(menu).not_to_be_visible()
    click('Daily TDL')
    for label in ['Team member to replace','Substitute level','EDS HO assignee','MSM HO assignee','TDL mail assignee']:
     check_select(label)
