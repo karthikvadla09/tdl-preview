@@ -35,3 +35,9 @@ Upstream `446cfa6..8a7f256` moves manual assignment controls into the queue card
 Generation prioritizes EDS/Backlogs queue staffing, then two L1 members in each queue, then history-based rotation and date tie-breaking. Rotation history cannot outweigh feasible two-L1 coverage. If attendance or hard eligibility prevents full coverage, generation relaxes the pairing and reports a warning. Existing saved TDLs are unchanged until regenerated.
 
 Privacy: the public preview ships fictional demo member labels only. Real roster names must stay in browser-local workspace data and private backups; do not commit them. Existing browser workspaces are preserved, so replacing the published demo does not erase personal data saved on a user's device.
+
+## Website themes
+
+Use the **Theme** selector in the top-right header to switch between High Contrast, Dark Minimal, Monochrome and Swiss Grid. High Contrast is the default. The selection is stored separately in browser local storage and synchronized across tabs; it never changes roster, attendance, allocations or backup data. If local storage is blocked, switching still works for the current page session. Theme styles are bundled for offline use, and the active sheet is replaced on each switch to prevent styling from previous themes leaking through.
+
+Run `TDL_TEST_URL=http://127.0.0.1:6094/ python tests/theme_switching_regression.py` with the static site served at that URL. The test covers all four themes, seven pages at five widths, repeated switching, unchanged workspace data, reload and cross-tab persistence, invalid/blocked storage, finalization and Excel download, using disposable browser contexts.
