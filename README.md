@@ -36,14 +36,8 @@ Generation prioritizes EDS/Backlogs queue staffing, then two L1 members in each 
 
 Privacy: the public preview ships fictional demo member labels only. Real roster names must stay in browser-local workspace data and private backups; do not commit them. Existing browser workspaces are preserved, so replacing the published demo does not erase personal data saved on a user's device.
 
-## Website themes
+## Website design
 
-Use the **Theme** selector in the top-right header to switch between High Contrast, Dark Minimal, Monochrome and Swiss Grid. High Contrast is the default. The selection is stored separately in browser local storage and synchronized across tabs; it never changes roster, attendance, allocations or backup data. If local storage is blocked, switching still works for the current page session. Theme styles are bundled for offline use, and the active sheet is replaced on each switch to prevent styling from previous themes leaking through.
+Swiss Grid is the permanent website style: Helvetica/Arial typography, red accents, neutral surfaces, square controls, and a responsive grid. There is no theme selector or appearance storage; earlier saved theme preferences are ignored. Workspace data and backups are unchanged.
 
-Run `TDL_TEST_URL=http://127.0.0.1:6094/ python tests/theme_switching_regression.py` with the static site served at that URL. The test covers all four themes, seven pages at five widths, repeated switching, unchanged workspace data, reload and cross-tab persistence, invalid/blocked storage, finalization and Excel download, using disposable browser contexts.
-
-Dropdown triggers, option lists and date-picker popovers use the same active-theme palette. The theme picker supports arrow keys, Home/End, Enter/Space, Escape, Tab dismissal and outside clicks. Shared option lists and date popovers are repositioned when needed to stay within narrow screens. Run `TDL_TEST_URL=http://127.0.0.1:6194/ python tests/dropdown_theme_regression.py` against a local static server to check all dropdown families, date popovers, theme styling, menu bounds and theme-picker keyboard behavior.
-
-The whole-site theme audit is `python tests/website_theme_audit.py`. It serves the static checkout internally and checks all seven pages across four themes at seven widths, font-family consistency, controls inside cards, distinct theme-option previews, short-screen popup/modal bounds and long fictional employee names. Mobile Team rows become readable cards; dialogs scroll within the viewport. Theme-option previews show the candidate design while the menu frame follows the currently selected theme.
-
-`python tests/commented_controls_regression.py` checks the nine annotated UI cases: working-date layout, theme-label typography, aligned substitute dropdown/input/button heights, Team/History search input containment, and empty-history text. It runs across four themes at five viewports, including the reported 1484×726 size, and submits a fictional substitute in isolated browser data. Form heights and text sizes use theme-specific tokens so mixed native/custom controls stay aligned.
+Run `python3 tests/website_theme_audit.py`, `python3 tests/commented_controls_regression.py`, and `python3 tests/theme_details_regression.py` for the single-style layout, control, search, and appearance checks. Each serves the static checkout internally using disposable demo browser data. Run `TDL_TEST_URL=http://127.0.0.1:6194/ python3 tests/dropdown_theme_regression.py` against a static server for dropdown and calendar checks.

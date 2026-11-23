@@ -4,16 +4,13 @@ from pathlib import Path
 from datetime import datetime,timezone
 from playwright.sync_api import sync_playwright,expect
 base=os.environ.get('TDL_TEST_URL','http://127.0.0.1:6194/')
-labels={'high-contrast':'High Contrast','dark-minimal':'Dark Minimal','monochrome':'Monochrome','swiss-grid':'Swiss Grid'}
+labels={'swiss-grid':'Swiss Grid'}
 out=Path(tempfile.mkdtemp(prefix='tdl-dropdown-evidence-'))
 with sync_playwright() as p:
  browser=p.chromium.launch(executable_path='/usr/bin/chromium');page=browser.new_page(viewport={'width':1440,'height':1000});errors=[]
  page.on('pageerror',lambda e:errors.append(str(e)))
  page.clock.install(time=datetime(2026,11,17,12,tzinfo=timezone.utc));page.goto(base,wait_until='networkidle')
  def click(name):page.get_by_role('button',name=name,exact=True).click()
- def select_theme(theme):
-  page.get_by_role('combobox',name='Website theme',exact=True).click();page.get_by_role('option',name=labels[theme],exact=True).click()
-  expect(page.locator('html')).to_have_attribute('data-theme',theme)
  def assert_surface(element):
   assert element.evaluate("""e=>{const probe=document.createElement('div');probe.style.backgroundColor='var(--picker-menu)';document.body.append(probe);const color=getComputedStyle(probe).backgroundColor;probe.remove();return getComputedStyle(e).backgroundColor===color}"""),element.evaluate('(e)=>getComputedStyle(e).backgroundColor')
  def check_select(label):
@@ -28,15 +25,6 @@ with sync_playwright() as p:
  for width in (1440,390):
   page.set_viewport_size({'width':width,'height':1000})
   for theme in labels:
-   select_theme(theme)
-   trigger=page.get_by_role('combobox',name='Website theme');trigger.click()
-   menu=page.get_by_role('listbox',name='Website theme');assert_surface(menu)
-   assert menu.get_by_role('option',selected=True).get_attribute('aria-label')==labels[theme]
-   assert menu.get_by_role('option').count()==4
-   rect=menu.bounding_box();assert rect['x']>=0 and rect['x']+rect['width']<=width+1
-   if width==1440:menu.screenshot(path=str(out/f'{theme}-menu.png'))
-   trigger.press('Escape');expect(trigger).to_be_focused();expect(menu).not_to_be_visible()
-   trigger.click();page.locator('.brand').click();expect(menu).not_to_be_visible()
    click('Daily TDL')
    for label in ['Team member to replace','Substitute level','EDS HO assignee','MSM HO assignee','TDL mail assignee']:
     check_select(label)
@@ -56,15 +44,6 @@ with sync_playwright() as p:
     rect=popup.bounding_box();assert rect['x']>=0 and rect['x']+rect['width']<=width+1,(label,width,rect)
     page.keyboard.press('Escape')
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
- # Keyboard selection commits only on Enter/Space; Escape preserves the old value.
- select_theme('high-contrast');trigger=page.get_by_role('combobox',name='Website theme')
- trigger.focus();trigger.press('ArrowDown');trigger.press('ArrowDown')
- expect(page.locator('html')).to_have_attribute('data-theme','high-contrast')
- trigger.press('Escape');expect(page.locator('html')).to_have_attribute('data-theme','high-contrast')
- trigger.press('End');trigger.press('Enter');expect(page.locator('html')).to_have_attribute('data-theme','swiss-grid')
- trigger.press('Home');trigger.press('Space');expect(page.locator('html')).to_have_attribute('data-theme','high-contrast')
- trigger.press('ArrowDown');trigger.press('Tab');expect(trigger).to_have_attribute('aria-expanded','false')
- page.reload(wait_until='networkidle');expect(trigger).to_have_text('High Contrast')
  assert not errors,errors
  browser.close()
-print('PASS: all dropdown families and date popovers match four themes on desktop/mobile; menu bounds, selected state, keyboard, outside dismissal and persistence. Evidence:',out)
+print('PASS: all dropdown families and date popovers match Swiss Grid on desktop/mobile; menu bounds, selected state, keyboard, and dismissal. Evidence:',out)

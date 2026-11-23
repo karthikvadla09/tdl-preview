@@ -10,18 +10,24 @@ class Quiet(SimpleHTTPRequestHandler):
  def log_message(self,*args):pass
 server=ThreadingHTTPServer(('127.0.0.1',0),partial(Quiet,directory=str(Path(__file__).resolve().parents[1])))
 Thread(target=server.serve_forever,daemon=True).start()
-themes={'high-contrast':'High Contrast','dark-minimal':'Dark Minimal','monochrome':'Monochrome','swiss-grid':'Swiss Grid'}
+themes={'swiss-grid':'Swiss Grid'}
 views=['Overview','Daily TDL','Team','Weekly view','History','Analytics','Local data']
 widths=[1440,1280,1024,768,560,390,360]
-out=Path(tempfile.mkdtemp(prefix='tdl-whole-site-audit-'));errors=[];fonts=[];preview_signatures={}
+out=Path(tempfile.mkdtemp(prefix='tdl-whole-site-audit-'));errors=[];fonts=[]
 try:
  with sync_playwright() as p:
   browser=p.chromium.launch(executable_path=os.environ.get('TDL_TEST_BROWSER','/usr/bin/chromium'))
   page=browser.new_page(viewport={'width':1440,'height':1000});page.on('pageerror',lambda e:errors.append(str(e)))
   page.clock.install(time=datetime(2026,11,17,12,tzinfo=timezone.utc));page.goto(f'http://127.0.0.1:{server.server_port}/',wait_until='networkidle')
+  expect(page.get_by_role('combobox',name='Website theme')).to_have_count(0)
+  assert page.locator('#tdl-active-theme').count()==0
+  before=page.evaluate("getComputedStyle(document.body).backgroundColor")
+  page.evaluate("localStorage.setItem('tdl-appearance-theme','dark-minimal')")
+  page.reload(wait_until='networkidle')
+  assert page.evaluate("getComputedStyle(document.body).backgroundColor")==before
+  expect(page.get_by_role('combobox',name='Website theme')).to_have_count(0)
   def click(name):page.get_by_role('button',name=name,exact=True).click()
-  def switch(theme):
-   page.get_by_role('combobox',name='Website theme',exact=True).click();page.get_by_role('option',name=themes[theme],exact=True).click()
+  def switch(theme):pass
   def bounded(element):
    r=element.bounding_box();v=page.viewport_size
    assert r and r['x']>=-1 and r['y']>=-1 and r['x']+r['width']<=v['width']+1 and r['y']+r['height']<=v['height']+1,(r,v)
@@ -41,37 +47,25 @@ try:
        if(!visible(box))continue;const r=box.getBoundingClientRect();const style=getComputedStyle(box);
        if(box.scrollWidth>box.clientWidth+2&&!['auto','scroll'].includes(style.overflowX))issues.push({box:box.className,excess:box.scrollWidth-box.clientWidth});
        for(const child of box.querySelectorAll('button,input,h1,h2,h3,label,.status-pill,.queue-tag')){
-        if(!visible(child)||child.closest('.styled-select-menu,.calendar-popover,.theme-picker-menu')||child.closest(selector)!==box)continue;
+        if(!visible(child)||child.closest('.styled-select-menu,.calendar-popover')||child.closest(selector)!==box)continue;
         if(['auto','scroll'].includes(style.overflowX))continue;
         const c=child.getBoundingClientRect();if(c.left<r.left-2||c.right>r.right+2)issues.push({box:box.className,child:child.className||child.tagName,text:child.textContent?.slice(0,40)});
        }
       }
       const expected=getComputedStyle(document.body).fontFamily;
-      for(const e of document.querySelectorAll('h1,h2,h3,.week-date b,.queue-card-head>b,.calendar-header>b,.theme-picker-trigger,.styled-select-trigger')){
+      for(const e of document.querySelectorAll('h1,h2,h3,.week-date b,.queue-card-head>b,.calendar-header>b,.styled-select-trigger')){
        if(visible(e)&&getComputedStyle(e).fontFamily!==expected)issues.push({font:e.className||e.tagName,actual:getComputedStyle(e).fontFamily,expected});
       }
       return issues;
      }''')
      assert not issues,(theme,width,view,issues)
-    click('Overview')
-    page.get_by_role('combobox',name='Website theme').click();menu=page.get_by_role('listbox',name='Website theme');bounded(menu)
-    for key in themes:
-     option=menu.locator(f'[data-theme-preview="{key}"]')
-     signature=option.evaluate("e=>({background:getComputedStyle(e).backgroundColor,color:getComputedStyle(e).color,font:getComputedStyle(e.querySelector('.theme-option-name')).fontFamily,radius:getComputedStyle(e).borderRadius})")
-     if key in preview_signatures:assert preview_signatures[key]==signature
-     else:preview_signatures[key]=signature
-    if width in (1440,390):
-     menu.screenshot(path=str(out/f'{theme}-menu-{width}.png'))
-    page.keyboard.press('Escape')
     if width==390:
      click('Team');page.screenshot(path=str(out/f'{theme}-team-mobile.png'),full_page=True)
     fonts.append({'theme':theme,'width':width,'family':page.evaluate('getComputedStyle(document.body).fontFamily')})
-  assert len({p['background'] for p in preview_signatures.values()})==4
   # Short screens must keep open menus and dialogs reachable, including landscape.
   for width,height in [(1440,900),(768,1024),(390,844),(360,640),(740,360)]:
    page.set_viewport_size({'width':width,'height':height})
    for theme in themes:
-    switch(theme);trigger=page.get_by_role('combobox',name='Website theme');trigger.click();bounded(page.get_by_role('listbox',name='Website theme'));trigger.press('End');trigger.press('Escape')
     click('Daily TDL')
     for label in ['Substitute level','EDS HO assignee']:
      trigger=page.get_by_role('combobox',name=label,exact=True);trigger.click();bounded(page.get_by_role('listbox',name=label,exact=True));trigger.press('Escape')
@@ -98,5 +92,5 @@ try:
   assert not errors,errors
   browser.close()
 finally:server.shutdown()
-(out/'summary.json').write_text(json.dumps({'themes':list(themes),'pages':views,'widths':widths,'page_checks':len(themes)*len(views)*len(widths),'fonts':fonts,'theme_previews':preview_signatures,'browser_errors':errors},indent=2))
-print('PASS: 196 page/theme/width checks; contained cards/controls and consistent fonts; four distinct theme previews; short-screen popovers/dialogs. Evidence:',out)
+(out/'summary.json').write_text(json.dumps({'themes':list(themes),'pages':views,'widths':widths,'page_checks':len(themes)*len(views)*len(widths),'fonts':fonts,'browser_errors':errors},indent=2))
+print('PASS: 49 Swiss Grid page/width checks; ignored legacy theme preference; contained cards/controls and consistent fonts; short-screen popovers/dialogs. Evidence:',out)
