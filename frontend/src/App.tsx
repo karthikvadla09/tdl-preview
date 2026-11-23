@@ -242,9 +242,29 @@ function WorkloadChart({data}:any){const rows=Object.entries(data) as [string,an
 function Empty({icon,title,text}:any){return <div className="empty-state"><div>{icon}</div><b>{title}</b><span>{text}</span></div>}
 function EmployeeModal({employee,close,save}:any){const [form,setForm]=useState({...employee});const isNew=!form.id;return <div className="modal-overlay" onClick={close}><div className="modal" onClick={e=>e.stopPropagation()}><div className="modal-head"><div><h2>{isNew?'Add employee':'Edit employee'}</h2><p>Update eligibility and team details.</p></div><button className="icon-button" onClick={close}><X size={18}/></button></div><label>Name<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label>Level<StyledSelect label="Employee level" value={form.level} onChange={level=>setForm({...form,level})} options={[{value:'L0',label:'L0'},{value:'L1',label:'L1'}]}/></label><label className="modal-check"><input type="checkbox" checked={form.eds_access} onChange={e=>setForm({...form,eds_access:e.target.checked})}/> EDS access enabled</label><label className="modal-check"><input type="checkbox" checked={form.active} onChange={e=>setForm({...form,active:e.target.checked})}/> Employee is active</label><label>Restrictions / notes<textarea value={form.restrictions} onChange={e=>setForm({...form,restrictions:e.target.value})}/></label><div className="modal-actions"><button className="btn btn-outline" onClick={close}>Cancel</button><button className="btn btn-primary" disabled={!form.name.trim()} onClick={()=>save(form)}><Save size={15}/> {isNew?'Add employee':'Save changes'}</button></div></div></div>}
 
+function usePopoverBounds(root: { current: HTMLDivElement | null }, open: boolean, selector: string) {
+ useLayoutEffect(() => {
+  if (!open) return
+  const position = () => {
+   const menu = root.current?.querySelector<HTMLElement>(selector)
+   if (!menu) return
+   menu.style.transform = 'none'
+   const rect = menu.getBoundingClientRect()
+   const edge = 12
+   const shift = rect.right > window.innerWidth - edge ? window.innerWidth - edge - rect.right
+    : rect.left < edge ? edge - rect.left : 0
+   menu.style.transform = `translateX(${shift}px)`
+  }
+  position()
+  window.addEventListener('resize', position)
+  return () => window.removeEventListener('resize', position)
+ }, [open, root, selector])
+}
+
 function StyledSelect({value,options,placeholder,disabled,onChange,label}: {value:string;options:{value:string;label:string}[];placeholder?:string;disabled?:boolean;onChange:(value:string)=>void;label:string}){
  const [open,setOpen]=useState(false),[activeIndex,setActiveIndex]=useState(Math.max(0,options.findIndex(option=>option.value===value)))
  const rootRef=useRef<HTMLDivElement>(null),optionRefs=useRef<Array<HTMLButtonElement|null>>([])
+ usePopoverBounds(rootRef,open,'.styled-select-menu')
  const selected=options.find(option=>option.value===value)
  useEffect(()=>{if(!open)return;const handlePointerDown=(event:PointerEvent)=>{if(!rootRef.current?.contains(event.target as Node))setOpen(false)};document.addEventListener('pointerdown',handlePointerDown);return()=>document.removeEventListener('pointerdown',handlePointerDown)},[open])
  useEffect(()=>{if(open)optionRefs.current[activeIndex]?.scrollIntoView({block:'nearest'})},[open,activeIndex])
@@ -261,6 +281,7 @@ function CalendarPicker({value,onChange,label,mode='date',workingDaysOnly=false}
  const parseValue=()=>{if(mode==='date'&&value)return new Date(`${value}T12:00:00`);if(mode==='week'&&value){const [year,week]=value.split('-W').map(Number);return new Date(year,0,1+((week-1)*7),12)}return new Date()}
  const [open,setOpen]=useState(false),[month,setMonth]=useState(()=>{const selected=parseValue();return new Date(selected.getFullYear(),selected.getMonth(),1,12)})
  const rootRef=useRef<HTMLDivElement>(null),triggerRef=useRef<HTMLButtonElement>(null)
+ usePopoverBounds(rootRef,open,'.calendar-popover')
  const id=label.replace(/\s+/g,'-').toLowerCase(),monthTitle=month.toLocaleDateString('en-US',{month:'long',year:'numeric'})
  const selectedDate=mode==='date'&&value?new Date(`${value}T12:00:00`):null
  const gridStart=new Date(month.getFullYear(),month.getMonth(),1-month.getDay(),12)

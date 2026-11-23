@@ -1,9 +1,60 @@
-.theme-control{display:flex;align-items:center;gap:8px;flex-shrink:0;font:11px Arial,sans-serif;color:inherit}
+html[data-theme]{--picker-bg:#fff;--picker-ink:#111827;--picker-border:#111827;--picker-menu:#fff;--picker-hover:#f1f3f5;--picker-selected:#fff1a6;--picker-selected-ink:#111827;--picker-focus:#111827;--picker-radius:3px;--picker-shadow:0 8px 24px #11182720;}
+.theme-control{display:flex;align-items:center;gap:8px;flex-shrink:0;font:11px Arial,sans-serif;color:var(--picker-ink);position:relative}
 .theme-control>span{font-size:10px;color:inherit}
-.theme-control select{width:144px;min-height:36px;padding:7px 27px 7px 10px;border:1px solid #b7b7b7;border-radius:4px;background:#fff;color:#222;font:11px Arial,sans-serif;cursor:pointer}
-.theme-control select:focus-visible{outline:3px solid currentColor;outline-offset:3px}
-html[data-theme="dark-minimal"] .theme-control{color:#b8ceda}
-html[data-theme="dark-minimal"] .theme-control select{background:#1b262d;border-color:#5f7785;color:#d7e5ec}
-html[data-theme="swiss-grid"] .theme-control select{border-radius:0;border-color:#333}
-html[data-theme="high-contrast"] .theme-control select{border:2px solid #111827;min-height:44px;color:#111827;font-weight:600}
-@media(max-width:760px){.top-actions .date-chip,.top-actions .user-mini{display:none}.topbar{gap:12px}.top-actions{min-width:0;gap:0}.theme-control>span{display:none}.theme-control select{width:138px;min-height:44px}.breadcrumbs{min-width:0}.theme-control{max-width:100%}}
+.theme-picker{position:relative;width:164px}
+.theme-picker-trigger{width:100%;min-height:38px;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--picker-border);border-radius:var(--picker-radius);background:var(--picker-bg);color:var(--picker-ink);font:11px Arial,sans-serif;cursor:pointer;box-shadow:none;text-align:left}
+.theme-picker-value{flex:1;min-width:0;white-space:nowrap}
+.theme-picker-trigger>svg{flex-shrink:0;transition:transform .15s}
+.theme-picker-trigger>svg.is-open{transform:rotate(180deg)}
+.theme-picker-trigger:hover,.theme-picker-trigger[aria-expanded=true]{background:var(--picker-hover)}
+.theme-picker-trigger:focus-visible{outline:3px solid var(--picker-focus);outline-offset:3px}
+.theme-picker-menu{position:absolute;z-index:50;top:calc(100% + 7px);right:0;width:208px;max-width:calc(100vw - 32px);padding:5px;background:var(--picker-menu);border:1px solid var(--picker-border);border-radius:var(--picker-radius);box-shadow:var(--picker-shadow);color:var(--picker-ink)}
+.theme-picker-option{display:flex;align-items:center;gap:10px;min-height:40px;padding:10px;cursor:pointer;border-radius:var(--picker-radius);font-size:12px;line-height:1.4;color:var(--picker-ink);border:1px solid transparent}
+.theme-picker-option>span:nth-child(2){flex:1}
+.theme-picker-option.is-active{background:var(--picker-hover);border-color:var(--picker-border)}
+.theme-picker-option[aria-selected=true]{background:var(--picker-selected);color:var(--picker-selected-ink);font-weight:600}
+.theme-picker-option[aria-selected=true].is-active{border-color:var(--picker-focus)}
+.theme-swatch{display:block;flex:0 0 15px;width:15px;height:15px;border:1px solid #888;border-radius:2px;background:linear-gradient(90deg,#111827 50%,#ffe76b 50%)}
+.theme-swatch-dark-minimal{background:linear-gradient(90deg,#10171b 50%,#a2ccdc 50%);border-color:#75909b}
+.theme-swatch-monochrome{background:linear-gradient(90deg,#222 50%,#eee 50%);border-color:#888}
+.theme-swatch-swiss-grid{background:linear-gradient(90deg,#f6f6f2 50%,#d52b1e 50%);border-color:#888;border-radius:0}
+html[data-theme="dark-minimal"]{--picker-bg:#18242c;--picker-ink:#d6e6ed;--picker-border:#57717e;--picker-menu:#172027;--picker-hover:#263944;--picker-selected:#a2ccdc;--picker-selected-ink:#15232b;--picker-focus:#c6e8f5;--picker-radius:5px;--picker-shadow:0 12px 28px #0006}
+html[data-theme="monochrome"]{--picker-bg:#fff;--picker-ink:#333;--picker-border:#aaa;--picker-menu:#fff;--picker-hover:#eee;--picker-selected:#292929;--picker-selected-ink:#fff;--picker-focus:#222;--picker-radius:5px;--picker-shadow:0 10px 25px #0002}
+html[data-theme="swiss-grid"]{--picker-bg:#f6f6f2;--picker-ink:#171717;--picker-border:#333;--picker-menu:#f6f6f2;--picker-hover:#e8e8e2;--picker-selected:#d52b1e;--picker-selected-ink:#fff;--picker-focus:#171717;--picker-radius:0;--picker-shadow:none}
+html[data-theme="high-contrast"] .theme-picker-trigger{border-width:2px;min-height:44px;font-weight:600}
+html[data-theme="high-contrast"] .theme-picker-menu{border-width:2px}
+html[data-theme="high-contrast"] .theme-picker-option{min-height:44px}
+@media(max-width:760px){.top-actions .date-chip,.top-actions .user-mini{display:none}.topbar{gap:12px}.top-actions{min-width:0;gap:0}.theme-control>span{display:none}.theme-picker{width:154px}.theme-picker-trigger{min-height:44px}.theme-picker-option{min-height:44px}.breadcrumbs{min-width:0}.theme-control{max-width:100%}}
+
+/* All application dropdowns share the active theme's surfaces and states. */
+html[data-theme] .styled-select-trigger{background:var(--picker-bg);color:var(--picker-ink);border:1px solid var(--picker-border);border-radius:var(--picker-radius);box-shadow:none;min-height:36px;font-size:11px}
+html[data-theme] .styled-select-trigger>svg{color:inherit}
+html[data-theme] .styled-select-trigger .is-placeholder{color:var(--picker-ink);opacity:.7}
+html[data-theme] .styled-select-trigger:hover:not(:disabled),html[data-theme] .styled-select.is-open .styled-select-trigger{background:var(--picker-hover);border-color:var(--picker-focus)}
+html[data-theme] .styled-select-trigger:focus-visible{outline:3px solid var(--picker-focus);outline-offset:2px}
+html[data-theme] .styled-select-trigger:disabled{opacity:.55;cursor:not-allowed}
+html[data-theme] .styled-select-menu{background:var(--picker-menu);color:var(--picker-ink);border:1px solid var(--picker-border);border-radius:var(--picker-radius);box-shadow:var(--picker-shadow);padding:5px}
+html[data-theme] .styled-select-option{background:transparent;color:var(--picker-ink);border:1px solid transparent;border-radius:var(--picker-radius);min-height:34px;font-size:11px;line-height:1.4}
+html[data-theme] .styled-select-option:hover,html[data-theme] .styled-select-option.is-active{background:var(--picker-hover);color:var(--picker-ink);border-color:var(--picker-border)}
+html[data-theme] .styled-select-option[aria-selected=true]{background:var(--picker-selected);color:var(--picker-selected-ink);font-weight:600}
+html[data-theme] .styled-select-option[aria-selected=true].is-active{border-color:var(--picker-focus)}
+html[data-theme] .styled-select-option>svg{color:inherit}
+html[data-theme] .calendar-trigger{background:var(--picker-bg);color:var(--picker-ink);border:1px solid var(--picker-border);border-radius:var(--picker-radius);box-shadow:none;min-height:36px}
+html[data-theme] .calendar-trigger>svg,html[data-theme] .calendar-trigger .calendar-placeholder{color:inherit}
+html[data-theme] .calendar-trigger:hover,html[data-theme] .calendar-picker.is-open .calendar-trigger{background:var(--picker-hover);border-color:var(--picker-focus);box-shadow:none}
+html[data-theme] .calendar-trigger:focus-visible,html[data-theme] .calendar-day:focus-visible,html[data-theme] .calendar-header button:focus-visible{outline:3px solid var(--picker-focus);outline-offset:2px}
+html[data-theme] .calendar-popover{background:var(--picker-menu);color:var(--picker-ink);border:1px solid var(--picker-border);border-radius:var(--picker-radius);box-shadow:var(--picker-shadow)}
+html[data-theme] .calendar-header>b,html[data-theme] .calendar-header button,html[data-theme] .calendar-weekday,html[data-theme] .calendar-day{color:var(--picker-ink)}
+html[data-theme] .calendar-header button,html[data-theme] .calendar-day{background:transparent;border-radius:var(--picker-radius)}
+html[data-theme] .calendar-day.is-outside{opacity:.6}
+html[data-theme] .calendar-day:hover:not(:disabled),html[data-theme] .calendar-header button:hover{background:var(--picker-hover);color:var(--picker-ink)}
+html[data-theme] .calendar-day.is-selected:not(.is-in-selected-week),html[data-theme] .calendar-day.is-in-selected-week{background:var(--picker-selected);color:var(--picker-selected-ink);font-weight:700}
+html[data-theme] .calendar-day.is-today{box-shadow:inset 0 0 0 1px var(--picker-focus)}
+html[data-theme] .calendar-hint{color:var(--picker-ink);opacity:.75;border-color:var(--picker-border)}
+html[data-theme] .date-select .calendar-trigger{min-height:36px;padding:6px 8px;font-size:11px}
+html[data-theme="high-contrast"] .styled-select-trigger,html[data-theme="high-contrast"] .calendar-trigger{border-width:2px;min-height:44px;font-weight:600}
+html[data-theme="high-contrast"] .styled-select-menu,html[data-theme="high-contrast"] .calendar-popover{border-width:2px}
+html[data-theme="high-contrast"] .styled-select-option{min-height:44px}
+@media(max-width:760px){html[data-theme] .styled-select-trigger,html[data-theme] .styled-select-option,html[data-theme] .calendar-trigger{min-height:44px}}
+
+html[data-theme] .styled-select-menu,html[data-theme] .calendar-popover{max-width:calc(100vw - 24px)}

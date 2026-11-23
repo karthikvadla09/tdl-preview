@@ -5,6 +5,12 @@ from datetime import datetime,timezone
 from playwright.sync_api import sync_playwright,expect
 base=os.environ.get('TDL_TEST_URL','http://127.0.0.1:6094/')
 themes=['high-contrast','dark-minimal','monochrome','swiss-grid']
+labels={'high-contrast':'High Contrast','dark-minimal':'Dark Minimal','monochrome':'Monochrome','swiss-grid':'Swiss Grid'}
+
+def select_theme(tab, theme):
+ tab.get_by_role('combobox',name='Website theme',exact=True).click()
+ tab.get_by_role('option',name=labels[theme],exact=True).click()
+
 views=['Overview','Daily TDL','Team','Weekly view','History','Analytics','Local data']
 out=Path(tempfile.mkdtemp(prefix='tdl-theme-evidence-'))
 with sync_playwright() as p:
@@ -17,7 +23,7 @@ with sync_playwright() as p:
  page.goto(base,wait_until='networkidle')
  def click(name):page.get_by_role('button',name=name,exact=True).click()
  def switch(theme):
-  page.get_by_role('combobox',name='Website theme',exact=True).select_option(theme)
+  select_theme(page,theme)
   expect(page.locator('html')).to_have_attribute('data-theme',theme)
  def state():
   return page.evaluate("""()=>new Promise((resolve,reject)=>{const r=indexedDB.open('tdl-local-workspace',1);r.onsuccess=()=>{const db=r.result;const tx=db.transaction('workspace');const q=tx.objectStore('workspace').get('state');q.onsuccess=()=>{resolve(q.result);db.close()};q.onerror=()=>reject(q.error)}})""")
@@ -48,12 +54,12 @@ with sync_playwright() as p:
  for theme in themes[::-1]+themes:
   switch(theme)
   assert signatures[theme]==page.evaluate("[getComputedStyle(document.querySelector('.sidebar')).backgroundColor,getComputedStyle(document.querySelector('.hero-card')).backgroundColor,document.querySelector('.hero-card h2').textContent]")
-  page.reload(wait_until='networkidle');expect(page.get_by_role('combobox',name='Website theme')).to_have_value(theme)
+  page.reload(wait_until='networkidle');expect(page.get_by_role('combobox',name='Website theme')).to_have_text(labels[theme])
   assert state()==saved
  # Another tab picks up persisted selection and synchronizes changes.
  other=context.new_page();other.goto(base,wait_until='networkidle')
- expect(other.get_by_role('combobox',name='Website theme')).to_have_value(themes[-1])
- other.get_by_role('combobox',name='Website theme').select_option('dark-minimal')
+ expect(other.get_by_role('combobox',name='Website theme')).to_have_text(labels[themes[-1]])
+ select_theme(other,'dark-minimal')
  expect(page.locator('html')).to_have_attribute('data-theme','dark-minimal')
  other.close()
  click('Daily TDL');click('Validate TDL');click('Finalize TDL')

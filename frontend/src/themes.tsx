@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { Check, ChevronDown } from 'lucide-react'
 import highContrast from './themes/high-contrast.css?inline'
 import darkMinimal from './themes/dark-minimal.css?inline'
 import monochrome from './themes/monochrome.css?inline'
@@ -48,7 +49,58 @@ export function useTheme(): [Theme, (theme: Theme) => void] {
   return [theme, setTheme]
 }
 export function ThemePicker({ theme, onChange }: { theme: Theme; onChange: (theme: Theme) => void }) {
-  return <label className="theme-control"><span>Theme</span><select aria-label="Website theme" value={theme} onChange={event => { if (isTheme(event.target.value)) onChange(event.target.value) }}>
-    {themeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-  </select></label>
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  const root = useRef<HTMLDivElement>(null)
+  const id = useId()
+  const selected = themeOptions.findIndex(option => option.value === theme)
+  useEffect(() => {
+    if (!open) return
+    const dismiss = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [open])
+  const choose = (index: number) => { onChange(themeOptions[index].value); setOpen(false) }
+  return <div className="theme-control" ref={root} onBlur={event => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
+  }}>
+    <span id={`${id}-label`}>Theme</span>
+    <div className="theme-picker">
+      <button type="button" className="theme-picker-trigger" role="combobox" aria-label="Website theme"
+        aria-haspopup="listbox" aria-expanded={open} aria-controls={`${id}-options`}
+        aria-activedescendant={open ? `${id}-option-${active}` : undefined}
+        onClick={() => { if (!open) setActive(selected); setOpen(!open) }}
+        onKeyDown={event => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            if (!open) { setActive(selected); setOpen(true) }
+            else setActive(index => (index + (event.key === 'ArrowDown' ? 1 : -1) + themeOptions.length) % themeOptions.length)
+          } else if (event.key === 'Home' || event.key === 'End') {
+            event.preventDefault(); setOpen(true); setActive(event.key === 'Home' ? 0 : themeOptions.length - 1)
+          } else if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            if (open) choose(active)
+            else { setActive(selected); setOpen(true) }
+          } else if (event.key === 'Escape' && open) {
+            event.preventDefault(); event.stopPropagation(); setOpen(false)
+          } else if (event.key === 'Tab') setOpen(false)
+        }}>
+        <span className={`theme-swatch theme-swatch-${theme}`} aria-hidden="true"/>
+        <span className="theme-picker-value">{themeOptions[selected].label}</span>
+        <ChevronDown size={14} aria-hidden="true" className={open ? 'is-open' : undefined}/>
+      </button>
+      {open && <div className="theme-picker-menu" id={`${id}-options`} role="listbox" aria-label="Website theme">
+        {themeOptions.map((option, index) => <div key={option.value} id={`${id}-option-${index}`}
+          role="option" aria-selected={option.value === theme}
+          className={`theme-picker-option${index === active ? ' is-active' : ''}`}
+          onPointerMove={() => setActive(index)} onMouseDown={event => event.preventDefault()} onClick={() => choose(index)}>
+          <span className={`theme-swatch theme-swatch-${option.value}`} aria-hidden="true"/>
+          <span>{option.label}</span>
+          {option.value === theme && <Check size={14} aria-hidden="true"/>}
+        </div>)}
+      </div>}
+    </div>
+  </div>
 }
