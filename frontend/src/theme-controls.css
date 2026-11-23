@@ -114,3 +114,50 @@ html[data-theme] .theme-picker-menu{z-index:60}
 }
 html[data-theme] .queue-member>span:not(.avatar){min-width:0;overflow-wrap:anywhere}
 html[data-theme] .styled-select-option{white-space:normal;overflow-wrap:anywhere}
+/* Consistent form metrics across mixed native inputs and custom controls. */
+html[data-theme]{--form-height:38px;--form-text:12px;--form-label:11px;--form-line:1px}
+html[data-theme="high-contrast"]{--form-height:44px;--form-text:14px;--form-label:12px;--form-line:2px}
+html[data-theme="dark-minimal"]{--form-height:40px}
+html[data-theme] .theme-control{font-family:var(--ui-font);font-size:var(--form-label);gap:10px}
+html[data-theme] .theme-control>span{font-family:var(--ui-font);font-size:var(--form-label);font-weight:500;line-height:1.4}
+html[data-theme] .theme-picker-trigger{font-size:var(--form-text);min-height:var(--form-height);height:var(--form-height);font-weight:500}
+html[data-theme="high-contrast"] .theme-picker-trigger{font-weight:600}
+html[data-theme] .theme-picker{width:190px}
+html[data-theme] .search-box{height:var(--form-height);min-height:var(--form-height);min-width:0;display:flex;align-items:center;gap:10px;padding:0 12px;border:var(--form-line) solid var(--picker-border);border-radius:var(--picker-radius);background:var(--picker-bg);color:var(--picker-ink);box-sizing:border-box}
+html[data-theme] .search-box>svg{flex:0 0 16px;width:16px;height:16px;color:inherit}
+html[data-theme] .search-box input{flex:1 1 0;width:0;min-width:0;height:100%;min-height:0;max-height:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:var(--form-text)/1.4 var(--ui-font);outline:0;box-shadow:none;box-sizing:border-box}
+html[data-theme] .search-box input::placeholder{color:inherit;opacity:.7}
+html[data-theme] .search-box:focus-within{outline:2px solid var(--picker-focus);outline-offset:2px}
+html[data-theme] .toolbar{align-items:center;gap:12px}
+html[data-theme] .toolbar .styled-select-trigger{height:var(--form-height);min-height:var(--form-height);font-size:var(--form-text)}
+html[data-theme] .temporary-swap-panel{background:var(--picker-menu);color:var(--picker-ink);border:var(--form-line) solid var(--picker-border);border-radius:var(--picker-radius);padding:16px}
+html[data-theme] .swap-heading b{font:600 var(--form-text)/1.4 var(--ui-font);color:var(--picker-ink)}
+html[data-theme] .swap-heading small,html[data-theme] .swap-heading>span{font:400 var(--form-label)/1.5 var(--ui-font);color:var(--picker-ink);opacity:.8}
+html[data-theme] .swap-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end;margin-top:16px}
+html[data-theme] .swap-form>label:not(.swap-access){display:flex;flex-direction:column;gap:6px;min-width:0;color:var(--picker-ink);font:500 var(--form-label)/1.4 var(--ui-font)}
+html[data-theme] .swap-form>label:first-child{grid-column:1/-1}
+html[data-theme] .swap-form input:not([type=checkbox]),html[data-theme] .swap-form .styled-select-trigger{width:100%;height:var(--form-height);min-height:var(--form-height);padding:8px 10px;border:var(--form-line) solid var(--picker-border);border-radius:var(--picker-radius);background:var(--picker-bg);color:var(--picker-ink);font:400 var(--form-text)/1.4 var(--ui-font);box-sizing:border-box}
+html[data-theme] .swap-form input::placeholder{color:var(--picker-ink);opacity:.65}
+html[data-theme] .swap-form .swap-access{grid-column:2;display:flex;align-items:center;align-self:end;gap:8px;min-height:var(--form-height);font:400 var(--form-label)/1.4 var(--ui-font);color:var(--picker-ink)}
+html[data-theme] .swap-form .swap-access input{flex:0 0 18px;width:18px;height:18px;min-height:0;padding:0;margin:0;accent-color:var(--picker-focus)}
+html[data-theme] .swap-form>.btn{grid-column:1/-1;min-height:var(--form-height);height:var(--form-height);padding:8px 12px;font:600 var(--form-text)/1.4 var(--ui-font);white-space:normal}
+html[data-theme] .date-select{display:grid;gap:6px;flex:0 1 240px;min-width:0;padding:0!important;border:0!important;background:transparent!important;border-radius:0!important}
+html[data-theme] .date-select>label{margin:0;color:var(--picker-ink);font:500 var(--form-label)/1.4 var(--ui-font);letter-spacing:.03em}
+html[data-theme] .date-select .calendar-picker{width:100%;min-width:0}
+html[data-theme] .date-select .calendar-trigger{width:100%;height:var(--form-height);min-height:var(--form-height);padding:8px 10px;font:500 var(--form-text)/1.4 var(--ui-font);border:var(--form-line) solid var(--picker-border);border-radius:var(--picker-radius)}
+html[data-theme] .date-select>small{margin:0;font:400 var(--form-label)/1.5 var(--ui-font);color:var(--picker-ink);opacity:.8}
+html[data-theme] .workflow-bar{align-items:center;gap:20px;padding:16px 18px}
+html[data-theme] .empty-state{padding:36px 20px;min-height:180px;justify-content:center;color:var(--picker-ink);font-family:var(--ui-font)}
+html[data-theme] .empty-state>div{width:44px;height:44px;background:var(--picker-hover);color:var(--picker-ink);border-radius:var(--picker-radius)}
+html[data-theme] .empty-state>b{font:600 var(--form-text)/1.5 var(--ui-font);color:var(--picker-ink)}
+html[data-theme] .empty-state>span{font:400 var(--form-label)/1.6 var(--ui-font);color:var(--picker-ink);opacity:.8;max-width:360px}
+html[data-theme] .table-panel th{font:600 var(--form-label)/1.5 var(--ui-font)}
+html[data-theme] .table-panel td{font-family:var(--ui-font);line-height:1.5}
+html[data-theme="high-contrast"] .table-panel td{font-size:13px}
+html[data-theme="high-contrast"] .table-person b{font-size:13px}
+@media(max-width:760px){html[data-theme]{--form-height:44px}html[data-theme] .theme-picker{width:174px}html[data-theme] .theme-picker-trigger{font-size:12px}.toolbar>.search-box{flex-basis:100%}}
+@media(max-width:560px){html[data-theme] .workflow-bar{gap:16px;padding:14px}html[data-theme] .date-select{flex:1 1 100%}html[data-theme] .temporary-swap-panel{padding:12px}html[data-theme] .swap-form{gap:10px}html[data-theme] .history-filters>.search-box{flex-basis:100%}}
+html[data-theme] .history-filters>.styled-select{width:132px;min-width:132px;flex:0 0 132px}
+html[data-theme] .history-filters label{font:400 var(--form-label)/1.4 var(--ui-font);color:var(--picker-ink)}
+html[data-theme] .history-filters label .calendar-picker{width:164px;flex:0 0 164px}
+@media(max-width:560px){html[data-theme] .history-filters>label{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px;flex:1 1 100%;min-width:0}html[data-theme] .history-filters label .calendar-picker{width:100%;min-width:0}}
