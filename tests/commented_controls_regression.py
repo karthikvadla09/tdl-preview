@@ -39,6 +39,14 @@ try:
      for selector,name in [('.workflow-bar','working-date'),('.temporary-swap-panel','substitute'),('.theme-control','theme-selector')]:page.locator(selector).screenshot(path=str(out/f'{theme}-{name}.png'))
     for view in ('Team','History'):
      click(view);box=page.locator('.search-box');field=box.locator('input');contained(field,box)
+     assert field.bounding_box()['width']>=160,(theme,width,view,field.bounding_box())
+     field.focus()
+     assert field.evaluate('(e)=>getComputedStyle(e).outlineStyle')=='none'
+     assert field.evaluate('(e)=>getComputedStyle(e).boxShadow')=='none'
+     if view=='Team':
+      field.fill('Demo Member 14');expect(page.locator('.team-table-panel tbody tr')).to_have_count(1)
+      expect(page.locator('.team-table-panel tbody')).to_contain_text('Demo Member 14')
+      field.fill('');expect(page.locator('.team-table-panel tbody tr')).to_have_count(14)
      assert abs(box.bounding_box()['height']-page.locator('.toolbar .styled-select-trigger').first.bounding_box()['height'])<=1,(theme,width,view)
      assert field.evaluate('(e)=>getComputedStyle(e).fontFamily')==page.evaluate('getComputedStyle(document.body).fontFamily')
      if view=='History':
