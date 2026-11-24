@@ -47,6 +47,19 @@ export function chooseSprt(day, queue, members, history) {
 const better = (candidate, current) => !current || candidate.score > current.score ||
   (candidate.score === current.score && candidate.tie > current.tie);
 
+// Cover as many queues as possible before assigning a second L1.
+// EDS > MSM > Backlogs breaks coverage ties, then prioritizes second L1s.
+export function l1StaffingWarnings(queues) {
+  const warnings = [];
+  for (const queue of ['EDS', 'MSM', 'Backlogs']) {
+    const members = queues[queue] || [];
+    const count = members.filter(employee => employee.level === 'L1').length;
+    if (members.length && !count) warnings.push(`${queue}: L1 coverage preference was relaxed due to availability or restrictions.`);
+    if (count < Math.min(2, members.length)) warnings.push(`${queue}: L1 pairing preference was relaxed due to availability or restrictions.`);
+  }
+  return warnings;
+}
+
 export function allocate(day, input, inputHistory) {
   const employees = input.map(({sprt, ...employee}) => ({...employee})).sort((a, b) => a.id - b.id);
   const history = inputHistory.filter(row => row.date < day).slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -93,19 +106,23 @@ export function allocate(day, input, inputHistory) {
     }
     states = next;
   }
-  // Queue staffing outranks L1 pairing; pairing outranks all rotation history.
+  // Queue staffing > first-L1 coverage > second-L1 priority > rotation.
   // Rotation scores are nonpositive; bound their full possible range rather
   // than choosing a fixed weight that long histories can eventually outweigh.
   const rotationBound = 100 + employees.length * (106 * history.length + 53);
-  const pairingWeight = rotationBound + 1;
-  const staffingWeight = 4 * pairingWeight + rotationBound + 1;
+  const l1Weight = rotationBound + 1;
+  // L1 preference ranges from 0 through 255; staffing must dominate it all.
+  const staffingWeight = 256 * l1Weight;
   let best;
   for (const state of states.values()) {
     const [eds, backlogs, ...l1Counts] = state.staffing;
     const staffingScore = [eds, backlogs].reduce((sum, count) => sum + 100 * count - 1000 * Math.max(0, 2 - count) - 100 * (3 - count), 0);
-    const pairingShortfall = l1Counts.slice(0, 2).reduce((sum, count) => sum + Math.max(0, 2 - count), 0);
-    const score = staffingWeight * staffingScore - pairingWeight * pairingShortfall +
-      state.score - 45 * Math.max(0, 2 - l1Counts[2]);
+    const priorityCounts = [l1Counts[0], l1Counts[2], l1Counts[1]];
+    const covered = priorityCounts.filter(count => count > 0).length;
+    const coveragePriority = priorityCounts.reduce((sum, count, i) => sum + (count > 0 ? 4 >> i : 0), 0);
+    const pairingPriority = priorityCounts.reduce((sum, count, i) => sum + (count > 1 ? 4 >> i : 0), 0);
+    const l1Preference = 64 * covered + 8 * coveragePriority + pairingPriority;
+    const score = staffingWeight * staffingScore + l1Weight * l1Preference + state.score;
     const candidate = {...state, score};
     if (better(candidate, best)) best = candidate;
   }
@@ -117,8 +134,8 @@ export function allocate(day, input, inputHistory) {
     const members = result[queue];
     if (members.length < 2) warnings.push(`${queue} has ${members.length} employee(s); minimum staffing of 2 could not be met.`);
     else if (members.length === 2) warnings.push(`${queue} is at minimum staffing (2); preferred staffing is 3.`);
-    if (members.filter(employee => employee.level === 'L1').length < Math.min(2, members.length)) warnings.push(`${queue}: L1 pairing preference was relaxed due to availability or restrictions.`);
   }
+  warnings.push(...l1StaffingWarnings(result));
   for (const queue of ['EDS', 'MSM']) {
     const selected = chooseSprt(day, queue, result[queue], history);
     if (selected) selected.sprt = `${queue} SPRT`;

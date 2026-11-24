@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {allocate, chooseSprt, addDays, restrictedConsecutiveEdsIds} from '../assets/allocation.js';
 const specs = [['Demo Member 01','L1',true],['Demo Member 02','L1',true],['Demo Member 03','L1',true],['Demo Member 04','L0',false],['Demo Member 05','L0',true],['Demo Member 06','L0',false],['Demo Member 07','L1',false],['Demo Member 08','L1',true],['Demo Member 09','L1',true],['Demo Member 10','L0',true],['Demo Member 11','L0',false],['Demo Member 12','L0',false],['Demo Member 13','L0',false],['Demo Member 14','L0',false]];
@@ -127,4 +128,24 @@ test('L1 shortage relaxes pairing with a warning while preserving eligibility',(
   const [queues,warnings]=allocate('2026-11-24',roster,[]);
   invariants('2026-11-24',queues,roster,[]);
   assert(warnings.some(w=>w.includes('Backlogs: L1 pairing')));
+});
+
+const policyCases = JSON.parse(readFileSync(new URL('./fixtures/l1-policy.json', import.meta.url)));
+for (const scenario of policyCases) test(`coverage-first L1 policy: ${scenario.name}`, () => {
+  const before = JSON.stringify(scenario);
+  const history=Array.from({length:scenario.historyCopies||1},()=>scenario.history).flat();
+  const [queues, warnings] = allocate(scenario.day, scenario.employees, history);
+  assert.deepEqual(['EDS','MSM','Backlogs'].map(q=>queues[q].filter(e=>e.level==='L1').length), scenario.expected);
+  assert.equal(Object.values(queues).flat().length, scenario.employees.length);
+  assert.equal(new Set(Object.values(queues).flat().map(e=>e.id)).size, scenario.employees.length);
+  assert(queues.EDS.every(e=>e.eds_access));
+  assert(queues.MSM.every(e=>e.restrictions!=='EDS and Backlogs only'));
+  if (scenario.name.includes('substitute')) assert(!queues.EDS.some(e=>e.id===99));
+  for (const q of ['EDS','MSM','Backlogs']) {
+    const count=queues[q].filter(e=>e.level==='L1').length;
+    assert.equal(warnings.some(w=>w.startsWith(`${q}: L1 coverage`)), Boolean(queues[q].length && !count));
+    assert.equal(warnings.some(w=>w.startsWith(`${q}: L1 pairing`)), count<Math.min(2,queues[q].length));
+  }
+  assert.deepEqual(signature(queues),signature(allocate(scenario.day,[...scenario.employees].reverse(),history)[0]));
+  assert.equal(JSON.stringify(scenario),before);
 });

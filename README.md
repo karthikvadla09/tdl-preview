@@ -32,7 +32,7 @@ Upstream `446cfa6..8a7f256` moves manual assignment controls into the queue card
 
 ### Staffing before rotation
 
-Generation prioritizes EDS/Backlogs queue staffing, then two L1 members in each queue, then history-based rotation and date tie-breaking. Rotation history cannot outweigh feasible two-L1 coverage. If attendance or hard eligibility prevents full coverage, generation relaxes the pairing and reports a warning. Existing saved TDLs are unchanged until regenerated.
+Generation preserves queue staffing and hard eligibility first, then covers as many queues as possible with at least one L1. Coverage ties and second L1 assignments use EDS → MSM → Backlogs priority. With five eligible L1s the target is EDS 2, MSM 2, Backlogs 1; with three it is 1 in each queue. Rotation history and date ties rank only equally suitable distributions. Missing L1 coverage and relaxed pairing are warnings, including for MSM. Existing saved TDLs are unchanged until regenerated.
 
 Privacy: the public preview ships fictional demo member labels only. Real roster names must stay in browser-local workspace data and private backups; do not commit them. Existing browser workspaces are preserved, so replacing the published demo does not erase personal data saved on a user's device.
 
@@ -41,3 +41,5 @@ Privacy: the public preview ships fictional demo member labels only. Real roster
 Swiss Grid is the permanent website style: Helvetica/Arial typography, red accents, neutral surfaces, square controls, and a responsive grid. There is no theme selector or appearance storage; earlier saved theme preferences are ignored. Workspace data and backups are unchanged.
 
 Run `python3 tests/website_theme_audit.py`, `python3 tests/commented_controls_regression.py`, and `python3 tests/theme_details_regression.py` for the single-style layout, control, search, and appearance checks. Each serves the static checkout internally using disposable demo browser data. Run `TDL_TEST_URL=http://127.0.0.1:6194/ python3 tests/dropdown_theme_regression.py` against a static server for dropdown and calendar checks.
+
+Run `python3 tests/l1_policy_browser_regression.py` to verify five-L1 generation, manual-edit warning refresh, reload, finalization, Excel export, and explicit regeneration using disposable demo data. Matching policy fixtures cover zero through six L1s, eligibility restrictions, long histories, and substitutes in both repositories.

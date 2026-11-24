@@ -1,0 +1,1078 @@
+[
+  {
+    "name": "0 L1s",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "1 L1s",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "2 L1s",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      1,
+      1,
+      0
+    ]
+  },
+  {
+    "name": "3 L1s",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "4 L1s",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 12,
+        "name": "Policy Demo 12",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "5 L1s",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 12,
+        "name": "Policy Demo 12",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 13,
+        "name": "Policy Demo 13",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      2,
+      2,
+      1
+    ]
+  },
+  {
+    "name": "6 L1s",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 12,
+        "name": "Policy Demo 12",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 13,
+        "name": "Policy Demo 13",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 14,
+        "name": "Policy Demo 14",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      2,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "five L1s with four MSM-restricted members",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": "EDS and Backlogs only"
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": "EDS and Backlogs only"
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": "EDS and Backlogs only"
+      },
+      {
+        "id": 12,
+        "name": "Policy Demo 12",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": "EDS and Backlogs only"
+      },
+      {
+        "id": 13,
+        "name": "Policy Demo 13",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      2,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "five L1s without EDS access",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": false,
+        "restrictions": ""
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": false,
+        "restrictions": ""
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": false,
+        "restrictions": ""
+      },
+      {
+        "id": 12,
+        "name": "Policy Demo 12",
+        "level": "L1",
+        "eds_access": false,
+        "restrictions": ""
+      },
+      {
+        "id": 13,
+        "name": "Policy Demo 13",
+        "level": "L1",
+        "eds_access": false,
+        "restrictions": ""
+      }
+    ],
+    "history": [],
+    "expected": [
+      0,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "five L1s with historical EDS penalties",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 9,
+        "name": "Policy Demo 09",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 12,
+        "name": "Policy Demo 12",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 13,
+        "name": "Policy Demo 13",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [
+      {
+        "date": "2020-01-07",
+        "employee_id": 9,
+        "level": "L1",
+        "queue": "EDS"
+      },
+      {
+        "date": "2020-01-07",
+        "employee_id": 10,
+        "level": "L1",
+        "queue": "EDS"
+      },
+      {
+        "date": "2020-01-07",
+        "employee_id": 11,
+        "level": "L1",
+        "queue": "EDS"
+      },
+      {
+        "date": "2020-01-07",
+        "employee_id": 12,
+        "level": "L1",
+        "queue": "EDS"
+      },
+      {
+        "date": "2020-01-07",
+        "employee_id": 13,
+        "level": "L1",
+        "queue": "EDS"
+      }
+    ],
+    "expected": [
+      2,
+      2,
+      1
+    ],
+    "historyCopies": 200
+  },
+  {
+    "name": "five L1s including consecutive-EDS substitute",
+    "day": "2026-11-24",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Policy Demo 01",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 2,
+        "name": "Policy Demo 02",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 3,
+        "name": "Policy Demo 03",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 4,
+        "name": "Policy Demo 04",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 5,
+        "name": "Policy Demo 05",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 6,
+        "name": "Policy Demo 06",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 7,
+        "name": "Policy Demo 07",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 8,
+        "name": "Policy Demo 08",
+        "level": "L0",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 99,
+        "name": "Policy Substitute",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": "Temporary substitute",
+        "eds_rotation_employee_id": 9
+      },
+      {
+        "id": 10,
+        "name": "Policy Demo 10",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 11,
+        "name": "Policy Demo 11",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 12,
+        "name": "Policy Demo 12",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      },
+      {
+        "id": 13,
+        "name": "Policy Demo 13",
+        "level": "L1",
+        "eds_access": true,
+        "restrictions": ""
+      }
+    ],
+    "history": [
+      {
+        "date": "2026-11-19",
+        "employee_id": 98,
+        "eds_rotation_employee_id": 9,
+        "level": "L1",
+        "queue": "EDS"
+      }
+    ],
+    "expected": [
+      2,
+      2,
+      1
+    ]
+  }
+]

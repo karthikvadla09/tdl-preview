@@ -1,5 +1,5 @@
 import { excludedL0Ids, hasRestrictedQueues, mondayOf, QUEUES, restrictedConsecutiveEdsIds, shiftDate } from './allocator'
-import { allocate, chooseSprt } from '../../assets/allocation.js'
+import { allocate, chooseSprt, l1StaffingWarnings } from '../../assets/allocation.js'
 import { assignSecondary, MAIL } from './secondaryDuties.mjs'
 import type { Queue } from './allocator'
 
@@ -399,7 +399,7 @@ function validate(state: State, date: string, day: Day, generation: Generation) 
   const check = eligibility(state, date)
   const hard: string[] = []
   const warnings = generation.warnings.filter((warning) =>
-    !/duplicate|absent|lacks|cannot|Invalid|exactly one|more than one|violation/.test(warning) &&
+    !/duplicate|absent|lacks|cannot|Invalid|exactly one|more than one|violation|L1 (coverage|pairing)/.test(warning) &&
     !duties.some(duty => warning.startsWith(dutyLabel(duty))))
   for (const queue of QUEUES) {
     const members = generation.queues[queue]
@@ -427,10 +427,8 @@ function validate(state: State, date: string, day: Day, generation: Generation) 
     if (count < 2) warnings.push(`${queue} minimum staffing (2) is not met.`)
     else if (count === 2) warnings.push(`${queue} is at minimum staffing (2); preferred staffing is 3.`)
     else if (count > 3) warnings.push(`${queue} has ${count} employees; preferred staffing is 3.`)
-    if (members.filter((e) => e.level === 'L1').length < Math.min(2, count)) {
-      warnings.push(`${queue} L1 pairing preference has been relaxed.`)
-    }
   }
+  warnings.push(...l1StaffingWarnings(generation.queues))
   if (!sameIds([...seen], present)) hard.push('Every present employee must have exactly one primary queue.')
   for (const duty of duties) {
     const label = dutyLabel(duty)
