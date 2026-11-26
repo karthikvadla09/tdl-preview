@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import {allocate, chooseSprt, addDays, restrictedConsecutiveEdsIds, backlogsThisWeekIds, backlogsPreviousWeekL0Ids, backlogsRotationWarnings} from '../assets/allocation.js';
+import {allocate, chooseSprt, addDays, restrictedConsecutiveEdsIds, backlogsThisWeekIds, backlogsPreviousWeekL0Ids, backlogsRotationWarnings, edsWeeklyPreference, edsWeeklyRotationWarnings} from '../assets/allocation.js';
 const specs = [['Demo Member 01','L1',true],['Demo Member 02','L1',true],['Demo Member 03','L1',true],['Demo Member 04','L0',false],['Demo Member 05','L0',true],['Demo Member 06','L0',false],['Demo Member 07','L1',false],['Demo Member 08','L1',true],['Demo Member 09','L1',true],['Demo Member 10','L0',true],['Demo Member 11','L0',false],['Demo Member 12','L0',false],['Demo Member 13','L0',false],['Demo Member 14','L0',false]];
 const team = () => specs.map(([name,level,eds_access],i) => ({id:i+1,name,level,eds_access,restrictions:name==='Demo Member 09'?'EDS and Backlogs only':''}));
 const signature = queues => Object.fromEntries(Object.entries(queues).map(([q,es]) => [q,es.map(e=>[e.id,e.sprt||'']).sort((a,b)=>a[0]-b[0])]));
@@ -201,4 +201,52 @@ test('previous-week opt-out remains effective whenever fallback is unnecessary',
   assert(!queues.Backlogs.some(e=>e.id===1));assert(!warnings.some(w=>w.includes('restriction relaxed')));
   const bad=structuredClone(queues);bad.Backlogs.push(roster.find(e=>e.id===1));
   assert(backlogsRotationWarnings('2026-11-24',roster,history,bad).some(w=>w.includes('one-week exclusion violation')));
+});
+
+const edsPairRoster=()=>policyCases.find(c=>c.name==='6 L1s').employees.map(e=>({...e,eds_access:e.level==='L1'||[1,2].includes(e.id)}));
+test('EDS L0 double turn alternates for six complete weeks, independent of name/order',()=>{
+  const roster=edsPairRoster(),history=[];let lastDoubled;
+  for(let week=0;week<6;week++){
+    const selected=[];
+    for(let offset=0;offset<3;offset++){
+      const day=addDays('2026-11-17',week*7+offset);
+      const [queues,warnings]=allocate(day,roster,history,[],roster);
+      const l0=queues.EDS.filter(e=>e.level==='L0');assert.equal(l0.length,1);
+      selected.push(l0[0].id);
+      assert(!warnings.some(w=>w.startsWith('EDS weekly L0')));
+      assert.deepEqual(signature(queues),signature(allocate(day,[...roster].reverse().map(e=>({...e,name:'Renamed'})),history,[],roster)[0]));
+      for(const [queue,ms] of Object.entries(queues))for(const e of ms)history.push({date:day,employee_id:e.id,level:e.level,queue,sprt:e.sprt||''});
+    }
+    assert.equal(selected[0],selected[2]);assert.notEqual(selected[0],selected[1]);
+    if(lastDoubled!==undefined)assert.notEqual(selected[0],lastDoubled);
+    lastDoubled=selected[0];
+  }
+});
+test('EDS weekly history uses completed prior week, stable initialization and covered identities',()=>{
+  const roster=edsPairRoster();
+  const history=[['2026-11-17',1],['2026-11-18',2],['2026-11-19',1]].map(([date,employee_id])=>({date,employee_id,level:'L0',queue:'EDS'}));
+  assert.equal(edsWeeklyPreference('2026-11-24',history,roster).id,2);
+  assert.equal(edsWeeklyPreference('2026-11-25',history,roster).id,1);
+  assert.equal(edsWeeklyPreference('2026-11-26',history,roster).id,2);
+  const incomplete=history.slice(0,1);
+  const plan=edsWeeklyPreference('2026-11-24',incomplete,roster);
+  assert.equal(plan.id,2); // Lower earlier EDS count initializes an incomplete week.
+  const current=[...incomplete,{date:'2026-11-24',employee_id:2,level:'L0',queue:'EDS'}];
+  assert.equal(edsWeeklyPreference('2026-11-26',current,roster).id,2);
+  const coverHistory=history.map(r=>r.employee_id===1?{...r,employee_id:99,eds_rotation_employee_id:1}:r);
+  assert.equal(edsWeeklyPreference('2026-11-24',coverHistory,roster).id,2);
+  assert.equal(edsWeeklyPreference('2026-11-24',history,policyCases.find(c=>c.name==='6 L1s').employees),null);
+  const future=[...history,{date:'2026-11-24',employee_id:2,level:'L0',queue:'EDS'},{date:'2026-11-25',employee_id:1,level:'L0',queue:'EDS'}];
+  assert.deepEqual(edsWeeklyPreference('2026-11-24',future,roster),edsWeeklyPreference('2026-11-24',history,roster));
+});
+test('EDS weekly preference relaxes for absence and follows an eligible L0 substitute',()=>{
+  const roster=edsPairRoster();const day='2026-11-17';
+  const absent=roster.filter(e=>e.id!==1),[queues,warnings]=allocate(day,absent,[],[],roster);
+  assert(queues.EDS.every(e=>e.id!==1));assert(warnings.some(w=>w.startsWith('EDS weekly L0')));
+  const cover=roster.map(e=>e.id===1?{...e,id:99,name:'Fictional Cover',eds_rotation_employee_id:1,restrictions:'Temporary substitute'}:e);
+  const [covered,coverWarnings]=allocate(day,cover,[],[],roster);
+  assert(covered.EDS.some(e=>e.id===99));assert(!coverWarnings.some(w=>w.startsWith('EDS weekly L0')));
+  assert.deepEqual(edsWeeklyRotationWarnings(day,cover,[],covered,roster),[]);
+  const unavailable=roster.filter(e=>![1,2].includes(e.id));
+  assert(allocate(day,unavailable,[],[],roster)[1].some(w=>w.startsWith('EDS weekly L0')));
 });

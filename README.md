@@ -52,6 +52,14 @@ Run `python3 tests/backlogs_exclusions_browser_regression.py` to check the check
 
 ## Backlogs weekly rotation
 
-Neither L0 nor L1 can receive Backlogs twice in the same Monday-based operational week. Only earlier current-finalized generations count. Last-week L0 members are normally avoided, but may be reused to maintain queue staffing and EDS → MSM → Backlogs L1 priorities when current-week non-repeat options are insufficient. The allocator minimizes these exceptions and reports them explicitly. Date-specific Backlogs exclusions, EDS access, and other hard eligibility rules are never relaxed. Manual saves and finalization reject same-week repeats and unnecessary previous-week reuse. Existing saved assignments stay unchanged until explicitly regenerated.
+Neither L0 nor L1 can receive Backlogs twice in the same Monday-based operational week. Only earlier current-finalized generations count. Last-week L0 members are normally avoided, but may be reused to maintain queue staffing, EDS → MSM → Backlogs L1 priorities, and the weekly EDS L0 turn when current-week non-repeat options are insufficient. The allocator minimizes these exceptions and reports them explicitly. Date-specific Backlogs exclusions, EDS access, and other hard eligibility rules are never relaxed. Manual saves and finalization reject same-week repeats and unnecessary previous-week reuse. Existing saved assignments stay unchanged until explicitly regenerated.
 
 Run `python3 tests/backlogs_weekly_browser_regression.py` to reproduce the weekly shortage pattern with fictional names and verify fallback generation, manual options, validation, finalization, and reload.
+
+## Weekly EDS L0 rotation
+
+When the regular active roster has exactly two EDS-authorized L0 identities, one is preferred on Tuesday/Thursday and the other on Wednesday. The identity with one EDS day in the previous completed Tuesday–Thursday week gets the next double turn. Only earlier current-finalized EDS history counts; drafts, superseded generations, and future dates do not. Without a completed prior week, the saved current Tuesday anchors the pattern; otherwise the lower earlier EDS count, then stable roster ID, initializes it. Names and input order do not decide turns.
+
+An eligible L0 substitute can fulfill the covered member's turn and history is credited to that EDS rotation identity. Attendance, access, consecutive-EDS restrictions, and queue/L1 staffing remain higher priorities. Deviations are soft warnings and do not prevent finalization. Larger or smaller authorized L0 pools retain general rotation without a forced two-person pattern. No schema change or automatic rewrite of saved assignments is required; regenerate drafts to apply the preference.
+
+Run `python3 tests/eds_weekly_browser_regression.py` for absence warnings, validation/finalization, reload, and warning removal after availability is restored. The 36-date browser regression also verifies the alternating weekly double turn.

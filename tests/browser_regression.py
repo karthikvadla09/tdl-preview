@@ -95,7 +95,7 @@ with sync_playwright() as p:
  assert len(wr)==14 and {r[0] for r in wr}=={'2026-11-17'}
  assert {r[6] for r in wr}=={secondary['TDL mail sender']['name']}
  assert list(weekly_book['HO screenshare'].values)==list(daily_book['HO screenshare'].values)
- click('Daily TDL');history=[];counts={};duty_counts={};samples=[]
+ click('Daily TDL');history=[];counts={};duty_counts={};samples=[];eds_pattern={}
  for week in range(12):
   for offset in range(3):
    day=date(2026,11,17)+timedelta(weeks=week,days=offset)
@@ -104,7 +104,14 @@ with sync_playwright() as p:
     expect(page.locator('.employee-checklist input:checked')).to_have_count(0)
     click('Select all');click('Save attendance');wait(lambda s:s['days'].get(str(day),{}).get('status')=='attendance_entered')
     click('Generate TDL');wait(lambda s:current(s,str(day)) is not None)
-   gen=queues();flat=[(q,e) for q,es in gen.items() for e in es]
+   gen=queues()
+   eds_l0=[e['id'] for e in gen['EDS'] if e['level']=='L0']
+   assert len(eds_l0)==1
+   eds_pattern.setdefault(week,[]).append(eds_l0[0])
+   if offset==2:
+    assert eds_pattern[week][0]==eds_pattern[week][2] and eds_pattern[week][0]!=eds_pattern[week][1]
+    if week:assert eds_pattern[week][0]!=eds_pattern[week-1][0]
+   flat=[(q,e) for q,es in gen.items() for e in es]
    assert len(flat)==14 and len({e['id'] for _,e in flat})==14
    for q in ('EDS','MSM'):
     eligible=[e for e in gen[q] if e['level']=='L0'];chosen=[e for e in eligible if e.get('sprt')==q+' SPRT'];assert len(chosen)==1
