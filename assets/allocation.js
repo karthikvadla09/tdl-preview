@@ -60,16 +60,44 @@ export function l1StaffingWarnings(queues) {
   return warnings;
 }
 
+export function backlogsThisWeekIds(day, history) {
+  const start = monday(day);
+  return new Set(history.filter(row => row.queue === 'Backlogs' && start <= row.date && row.date < day).map(row => row.employee_id));
+}
+
+export function backlogsPreviousWeekL0Ids(day, history) {
+  const start = monday(day), previous = addDays(start, -7);
+  return new Set(history.filter(row => row.queue === 'Backlogs' && row.level === 'L0' && previous <= row.date && row.date < start).map(row => row.employee_id));
+}
+
+export function backlogsRotationWarnings(day, employees, history, queues, excludedIds = []) {
+  const used = backlogsThisWeekIds(day, history), previous = backlogsPreviousWeekL0Ids(day, history);
+  const warnings = (queues.Backlogs || []).filter(e => used.has(e.id)).map(e => `Same-week Backlogs repeat violation for ${e.name}.`);
+  const reused = (queues.Backlogs || []).filter(e => e.level === 'L0' && previous.has(e.id)).length;
+  if (reused && !warnings.length) {
+    let budget = 0;
+    try { budget = allocate(day, employees, history, excludedIds)[0].Backlogs.filter(e => e.level === 'L0' && previous.has(e.id)).length; } catch { /* Other validation errors explain impossible rosters. */ }
+    if (reused > budget) warnings.push('L0 Backlogs one-week exclusion violation: previous-week reuse is allowed only when needed for staffing or L1 coverage without a same-week repeat.');
+    else warnings.push(`Backlogs: previous-week L0 restriction relaxed for ${reused} member(s) to maintain staffing and L1 priorities without a same-week repeat.`);
+  }
+  return warnings;
+}
+
 export function allocate(day, input, inputHistory, backlogsExcludedIds = []) {
   const employees = input.map(({sprt, ...employee}) => ({...employee})).sort((a, b) => a.id - b.id);
   const history = inputHistory.filter(row => row.date < day).slice().sort((a, b) => a.date.localeCompare(b.date));
   const start = monday(day), previousStart = addDays(start, -7), previousWeekday = addDays(day, -7);
   const excluded = new Set(history.filter(row => row.queue === 'Backlogs' && row.level === 'L0' && previousStart <= row.date && row.date < start).map(row => row.employee_id));
+  const usedThisWeek = backlogsThisWeekIds(day, history);
   const consecutive = restrictedConsecutiveEdsIds(day, employees, history);
   const backlogsExcluded = new Set(backlogsExcludedIds);
   const eligible = (employee, queue) => queue === 'EDS' ? employee.eds_access && !consecutive.has(employee.id) :
-    queue === 'Backlogs' ? !backlogsExcluded.has(employee.id) && (employee.level !== 'L0' || !excluded.has(employee.id)) : !restricted(employee);
+    queue === 'Backlogs' ? !backlogsExcluded.has(employee.id) && !usedThisWeek.has(employee.id) : !restricted(employee);
   const eligibleL0 = Object.fromEntries(['EDS', 'Backlogs'].map(queue => [queue, employees.some(employee => employee.level === 'L0' && eligible(employee, queue))]));
+  const rotationBound = 100 + employees.length * (106 * history.length + 53);
+  const reuseWeight = rotationBound + 1;
+  const l1Weight = (employees.length + 1) * reuseWeight;
+  const staffingWeight = 256 * l1Weight;
   const byEmployee = new Map();
   for (const row of history) {
     const rows = byEmployee.get(row.employee_id) || [];
@@ -89,6 +117,7 @@ export function allocate(day, input, inputHistory, backlogsExcludedIds = []) {
           if (backlogs.some(row => row.date === previousWeekday)) score -= 45;
         }
       }
+      if (queue === 'Backlogs' && employee.level === 'L0' && excluded.has(employee.id)) score -= reuseWeight;
       return {queue, score};
     });
     const next = new Map();
@@ -107,13 +136,7 @@ export function allocate(day, input, inputHistory, backlogsExcludedIds = []) {
     }
     states = next;
   }
-  // Queue staffing > first-L1 coverage > second-L1 priority > rotation.
-  // Rotation scores are nonpositive; bound their full possible range rather
-  // than choosing a fixed weight that long histories can eventually outweigh.
-  const rotationBound = 100 + employees.length * (106 * history.length + 53);
-  const l1Weight = rotationBound + 1;
-  // L1 preference ranges from 0 through 255; staffing must dominate it all.
-  const staffingWeight = 256 * l1Weight;
+  // Hard same-week ban, then staffing > L1 policy > minimum prior-week L0 reuse > rotation.
   let best;
   for (const state of states.values()) {
     const [eds, backlogs, ...l1Counts] = state.staffing;
@@ -127,7 +150,7 @@ export function allocate(day, input, inputHistory, backlogsExcludedIds = []) {
     const candidate = {...state, score};
     if (better(candidate, best)) best = candidate;
   }
-  if (!best) throw new Error(backlogsExcluded.size ? 'No valid allocation: Backlogs exclusions conflict with attendance or other eligibility rules. Change exclusions or attendance and try again.' : 'No valid allocation could be found for this attendance list.');
+  if (!best) throw new Error(backlogsExcluded.size ? 'No valid allocation: Backlogs exclusions conflict with attendance or other eligibility rules. Change exclusions or attendance and try again.' : 'No valid allocation: same-week Backlogs repeats are not allowed. Change attendance or eligibility to resolve the conflict.');
   const result = Object.fromEntries(QUEUES.map(queue => [queue, []]));
   employees.forEach((employee, index) => result[best.path[index]].push(employee));
   const warnings = [];
@@ -136,6 +159,8 @@ export function allocate(day, input, inputHistory, backlogsExcludedIds = []) {
     if (members.length < 2) warnings.push(`${queue} has ${members.length} employee(s); minimum staffing of 2 could not be met.`);
     else if (members.length === 2) warnings.push(`${queue} is at minimum staffing (2); preferred staffing is 3.`);
   }
+  const reused = result.Backlogs.filter(e => e.level === 'L0' && excluded.has(e.id)).length;
+  if (reused) warnings.push(`Backlogs: previous-week L0 restriction relaxed for ${reused} member(s) to maintain staffing and L1 priorities without a same-week repeat.`);
   warnings.push(...l1StaffingWarnings(result));
   for (const queue of ['EDS', 'MSM']) {
     const selected = chooseSprt(day, queue, result[queue], history);

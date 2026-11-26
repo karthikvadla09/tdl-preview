@@ -112,6 +112,8 @@ with sync_playwright() as p:
     counts[chosen[0]['id'],q]=counts.get((chosen[0]['id'],q),0)+1
    for queue in ('EDS','Backlogs'):
     assert sum(e['level']=='L1' for e in gen[queue])==2,(str(day),queue,gen[queue])
+   used_this_week={r['employee_id'] for r in history if r['queue']=='Backlogs' and str(day-timedelta(days=day.weekday()))<=r['date']<str(day)}
+   assert not used_this_week & {e['id'] for e in gen['Backlogs']}
    gen_duties=current(state(),str(day))['secondary']
    for duty,holder in gen_duties.items():
     excluded={5} if day==date(2026,11,17) else set()

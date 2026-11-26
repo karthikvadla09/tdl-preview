@@ -1,5 +1,5 @@
-import { excludedL0Ids, hasRestrictedQueues, mondayOf, QUEUES, restrictedConsecutiveEdsIds, shiftDate } from './allocator'
-import { allocate, chooseSprt, l1StaffingWarnings } from '../../assets/allocation.js'
+import { hasRestrictedQueues, mondayOf, QUEUES, restrictedConsecutiveEdsIds, shiftDate } from './allocator'
+import { allocate, chooseSprt, l1StaffingWarnings, backlogsThisWeekIds, backlogsRotationWarnings } from '../../assets/allocation.js'
 import { assignSecondary, MAIL } from './secondaryDuties.mjs'
 import type { Queue } from './allocator'
 
@@ -223,6 +223,7 @@ function readDay(state: State, date: string) {
   return {
     date, status: day?.status ?? 'not_started', attendance_saved: !!day && attendanceSaved(day, employees),
     present_ids: presentIds(day), employees, generation: current(day), history: priorHistory(state, date),
+    backlogs_unavailable_ids: [...new Set([...(day?.exclusions?.backlogs ?? []), ...backlogsThisWeekIds(date, priorHistory(state, date))])],
     exclusions: Object.fromEntries((['ho', 'mail', 'backlogs'] as const).map(kind => [
       kind, (day?.exclusions?.[kind] ?? []).filter(id => employees.some(employee => employee.id === id)),
     ])),
@@ -380,15 +381,13 @@ function generate(state: State, date: string, day: Day | undefined) {
 
 function eligibility(state: State, date: string) {
   const history = priorHistory(state, date)
-  const excluded = excludedL0Ids(date, history)
+  const usedThisWeek = backlogsThisWeekIds(date, history)
   const recent = restrictedConsecutiveEdsIds(date, effectiveEmployees(state, state.days[date]), history)
   return (employee: Employee, queue: Queue): string | undefined => {
     if (queue === 'Backlogs' && state.days[date]?.exclusions?.backlogs?.includes(employee.id)) return `Backlogs date exclusion violation for ${employee.name}.`
     if (queue === 'EDS' && !employee.eds_access) return `${employee.name} lacks EDS access.`
     if (queue === 'MSM' && hasRestrictedQueues(employee)) return `${employee.name} cannot be assigned to MSM.`
-    if (queue === 'Backlogs' && employee.level === 'L0' && excluded.has(employee.id)) {
-      return `L0 Backlogs one-week exclusion violation for ${employee.name}.`
-    }
+    if (queue === 'Backlogs' && usedThisWeek.has(employee.id)) return `Same-week Backlogs repeat violation for ${employee.name}.`
     if (queue === 'EDS' && recent.has(employee.id)) return `Consecutive-day EDS violation for ${employee.name}.`
   }
 }
@@ -400,7 +399,7 @@ function validate(state: State, date: string, day: Day, generation: Generation) 
   const check = eligibility(state, date)
   const hard: string[] = []
   const warnings = generation.warnings.filter((warning) =>
-    !/duplicate|absent|lacks|cannot|Invalid|exactly one|more than one|violation|L1 (coverage|pairing)/.test(warning) &&
+    !/duplicate|absent|lacks|cannot|Invalid|exactly one|more than one|violation|previous-week L0 restriction relaxed|L1 (coverage|pairing)/.test(warning) &&
     !duties.some(duty => warning.startsWith(dutyLabel(duty))))
   for (const queue of QUEUES) {
     const members = generation.queues[queue]
@@ -429,6 +428,9 @@ function validate(state: State, date: string, day: Day, generation: Generation) 
     else if (count === 2) warnings.push(`${queue} is at minimum staffing (2); preferred staffing is 3.`)
     else if (count > 3) warnings.push(`${queue} has ${count} employees; preferred staffing is 3.`)
   }
+  const rotationWarnings = backlogsRotationWarnings(date, effectiveEmployees(state, day).filter(e=>day.attendance[e.id]), priorHistory(state,date), generation.queues, day.exclusions?.backlogs ?? [])
+  hard.push(...rotationWarnings.filter(w=>w.includes('violation')))
+  warnings.push(...rotationWarnings.filter(w=>!w.includes('violation')))
   warnings.push(...l1StaffingWarnings(generation.queues))
   if (!sameIds([...seen], present)) hard.push('Every present employee must have exactly one primary queue.')
   for (const duty of duties) {
@@ -468,6 +470,8 @@ function adjust(state: State, date: string, day: Day, generation: Generation, in
     const { id, name, level } = employee
     queues[queue].push({ id, name, level, sprt: '' })
   }
+  const rotationError = backlogsRotationWarnings(date, [...employees.values()].filter(e=>day.attendance[e.id]), priorHistory(state,date), queues, day.exclusions?.backlogs ?? []).find(w=>w.includes('violation'))
+  if (rotationError) throw new Error(rotationError)
   for (const queue of ['EDS', 'MSM'] as const) {
     const eligible = queues[queue].filter((e) => e.level === 'L0')
     const old = generation.queues[queue].find((e) => e.sprt === `${queue} SPRT`)

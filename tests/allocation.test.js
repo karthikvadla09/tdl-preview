@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import {allocate, chooseSprt, addDays, restrictedConsecutiveEdsIds} from '../assets/allocation.js';
+import {allocate, chooseSprt, addDays, restrictedConsecutiveEdsIds, backlogsThisWeekIds, backlogsPreviousWeekL0Ids, backlogsRotationWarnings} from '../assets/allocation.js';
 const specs = [['Demo Member 01','L1',true],['Demo Member 02','L1',true],['Demo Member 03','L1',true],['Demo Member 04','L0',false],['Demo Member 05','L0',true],['Demo Member 06','L0',false],['Demo Member 07','L1',false],['Demo Member 08','L1',true],['Demo Member 09','L1',true],['Demo Member 10','L0',true],['Demo Member 11','L0',false],['Demo Member 12','L0',false],['Demo Member 13','L0',false],['Demo Member 14','L0',false]];
 const team = () => specs.map(([name,level,eds_access],i) => ({id:i+1,name,level,eds_access,restrictions:name==='Demo Member 09'?'EDS and Backlogs only':''}));
 const signature = queues => Object.fromEntries(Object.entries(queues).map(([q,es]) => [q,es.map(e=>[e.id,e.sprt||'']).sort((a,b)=>a[0]-b[0])]));
@@ -12,6 +12,7 @@ function invariants(day,queues,roster,history){
   const monday=addDays(day,-((new Date(day+'T00:00:00Z').getUTCDay()+6)%7));
   const excluded=new Set(history.filter(r=>r.queue==='Backlogs'&&r.level==='L0'&&addDays(monday,-7)<=r.date&&r.date<monday).map(r=>r.employee_id));
   assert(queues.Backlogs.every(e=>!excluded.has(e.id)));
+  assert(queues.Backlogs.every(e=>!backlogsThisWeekIds(day,history).has(e.id)));
   const previous=addDays(day,new Date(day+'T00:00:00Z').getUTCDay()===2?-5:-1);
   const recent=new Set(history.filter(r=>r.date===previous&&r.queue==='EDS').map(r=>r.employee_id));
   assert(queues.EDS.every(e=>e.restrictions==='EDS and Backlogs only'||!recent.has(e.id)));
@@ -163,4 +164,41 @@ test('date-specific Backlogs exclusions block both levels alongside the weekly r
     {id:99,name:'Fictional Restricted',level,eds_access:false,restrictions:'EDS and Backlogs only'},
   ],[],[99]),/Backlogs exclusions conflict/);
   assert.deepEqual(signature(allocate('2026-11-24',roster,[])[0]),signature(allocate('2026-11-24',roster,[],[])[0]));
+});
+
+const weeklyCase=JSON.parse(readFileSync(new URL('./fixtures/backlogs-weekly-reproduction.json', import.meta.url)));
+test('uploaded scenario: no same-week repeats; minimal prior-week fallback preserves EDS/MSM priority',()=>{
+  const c=weeklyCase,used=backlogsThisWeekIds(c.day,c.history),prior=backlogsPreviousWeekL0Ids(c.day,c.history);
+  const [queues,warnings]=allocate(c.day,c.employees,c.history);
+  assert(!queues.Backlogs.some(e=>used.has(e.id)));
+  assert(!queues.Backlogs.some(e=>e.id===14));
+  assert.equal(queues.Backlogs.length,3);
+  assert.deepEqual(['EDS','MSM','Backlogs'].map(q=>queues[q].filter(e=>e.level==='L1').length),[2,2,1]);
+  assert.equal(queues.Backlogs.filter(e=>e.level==='L0'&&prior.has(e.id)).length,1);
+  assert(warnings.some(w=>w.includes('previous-week L0 restriction relaxed')));
+  assert(!backlogsRotationWarnings(c.day,c.employees,c.history,queues).some(w=>w.includes('violation')));
+  const bad=structuredClone(queues);bad.Backlogs.push(c.employees.find(e=>e.id===14));
+  assert(backlogsRotationWarnings(c.day,c.employees,c.history,bad).some(w=>w.includes('Same-week')));
+  const forbidden=queues.Backlogs.find(e=>prior.has(e.id)).id;
+  assert(!allocate(c.day,c.employees,c.history,[forbidden])[0].Backlogs.some(e=>e.id===forbidden));
+});
+test('fallback never allows a current-week repeat at either level and is minimal when L1s are exhausted',()=>{
+  const roster=policyCases.find(c=>c.name==='6 L1s').employees;
+  const history=roster.filter(e=>e.level==='L1').map(e=>({date:'2026-11-24',employee_id:e.id,level:e.level,queue:'Backlogs'}));
+  history.push(...roster.filter(e=>e.level==='L0'&&e.id!==1).map(e=>({date:'2026-11-17',employee_id:e.id,level:e.level,queue:'Backlogs'})));
+  const [queues]=allocate('2026-11-26',roster,history);
+  assert.equal(queues.Backlogs.length,3);assert(queues.Backlogs.every(e=>e.level==='L0'));
+  assert.equal(queues.Backlogs.filter(e=>e.id!==1).length,2);
+  const everyoneUsed=roster.map(e=>({date:'2026-11-24',employee_id:e.id,level:e.level,queue:'Backlogs'}));
+  assert.equal(allocate('2026-11-26',roster,everyoneUsed)[0].Backlogs.length,0);
+  const blocked={id:99,name:'Fictional Restricted',level:'L1',eds_access:false,restrictions:'EDS and Backlogs only'};
+  assert.throws(()=>allocate('2026-11-26',[blocked],[{date:'2026-11-24',employee_id:99,level:'L1',queue:'Backlogs'}]),/same-week/i);
+});
+test('previous-week opt-out remains effective whenever fallback is unnecessary',()=>{
+  const roster=policyCases.find(c=>c.name==='6 L1s').employees;
+  const history=[{date:'2026-11-17',employee_id:1,level:'L0',queue:'Backlogs'}];
+  const [queues,warnings]=allocate('2026-11-24',roster,history);
+  assert(!queues.Backlogs.some(e=>e.id===1));assert(!warnings.some(w=>w.includes('restriction relaxed')));
+  const bad=structuredClone(queues);bad.Backlogs.push(roster.find(e=>e.id===1));
+  assert(backlogsRotationWarnings('2026-11-24',roster,history,bad).some(w=>w.includes('one-week exclusion violation')));
 });
