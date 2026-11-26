@@ -45,7 +45,7 @@ type Day = {
   generations: Generation[]
   current_generation_id: number | null
   audit: { event_type: string; created_at: string; details: unknown }[]
-  exclusions?: Partial<Record<'ho' | 'mail', number[]>>
+  exclusions?: Partial<Record<'ho' | 'mail' | 'backlogs', number[]>>
 }
 type State = { nextId: number; employees: Employee[]; days: Record<string, Day> }
 
@@ -223,7 +223,7 @@ function readDay(state: State, date: string) {
   return {
     date, status: day?.status ?? 'not_started', attendance_saved: !!day && attendanceSaved(day, employees),
     present_ids: presentIds(day), employees, generation: current(day), history: priorHistory(state, date),
-    exclusions: Object.fromEntries((['ho', 'mail'] as const).map(kind => [
+    exclusions: Object.fromEntries((['ho', 'mail', 'backlogs'] as const).map(kind => [
       kind, (day?.exclusions?.[kind] ?? []).filter(id => employees.some(employee => employee.id === id)),
     ])),
     swaps: (day?.swaps ?? []).map((swap) => ({
@@ -237,7 +237,7 @@ function week(state: State, date: string) {
   const days = [1, 2, 3].map((offset) => {
     const date = shiftDate(monday, offset)
     const day = state.days[date]
-    return { date, status: day?.status ?? 'not_started', present_count: presentIds(day).length, generation: current(day) }
+    return { date, status: day?.status ?? 'not_started', present_count: presentIds(day).length, generation: current(day), backlogs_exclusions: effectiveEmployees(state, day).filter(employee => day?.exclusions?.backlogs?.includes(employee.id)).map(employee=>employee.name) }
   })
   return { week_start: monday, days }
 }
@@ -359,7 +359,7 @@ function generate(state: State, date: string, day: Day | undefined) {
   if (!day || !attendanceSaved(day, roster)) throw new Error('Save attendance for every active employee before generating this day.')
   const present = roster.filter((employee) => day.attendance[employee.id])
   if (!present.length) throw new Error('At least one employee must be present to generate a TDL.')
-  const [allocation, warnings] = allocate(date, present, priorHistory(state, date))
+  const [allocation, warnings] = allocate(date, present, priorHistory(state, date), day.exclusions?.backlogs ?? [])
   const queues = { EDS: [], Backlogs: [], MSM: [] } as Generation['queues']
   for (const queue of QUEUES) {
     queues[queue] = allocation[queue].map(({ id, name, level, sprt }) => ({ id, name, level: level as Level, sprt: sprt ?? '' }))
@@ -383,6 +383,7 @@ function eligibility(state: State, date: string) {
   const excluded = excludedL0Ids(date, history)
   const recent = restrictedConsecutiveEdsIds(date, effectiveEmployees(state, state.days[date]), history)
   return (employee: Employee, queue: Queue): string | undefined => {
+    if (queue === 'Backlogs' && state.days[date]?.exclusions?.backlogs?.includes(employee.id)) return `Backlogs date exclusion violation for ${employee.name}.`
     if (queue === 'EDS' && !employee.eds_access) return `${employee.name} lacks EDS access.`
     if (queue === 'MSM' && hasRestrictedQueues(employee)) return `${employee.name} cannot be assigned to MSM.`
     if (queue === 'Backlogs' && employee.level === 'L0' && excluded.has(employee.id)) {
@@ -554,8 +555,8 @@ export async function localApi(path: string, init: RequestInit = {}): Promise<an
       return addSwap(state, getOrCreateDay(state, date), input)
     }
     if (method === 'DELETE' && action === 'swaps') return removeSwap(state, day, Number(item), confirmed)
-    if (method === 'PUT' && (action === 'ho-exclusions' || action === 'mail-exclusions')) {
-      const kind = action === 'ho-exclusions' ? 'ho' : 'mail'
+    if (method === 'PUT' && ['ho-exclusions', 'mail-exclusions', 'backlogs-exclusions'].includes(action)) {
+      const kind = action === 'ho-exclusions' ? 'ho' : action === 'mail-exclusions' ? 'mail' : 'backlogs'
       const rosterIds = new Set(effectiveEmployees(state, day).map(employee => employee.id))
       const ids = input.excluded_ids
       if (!Array.isArray(ids) || ids.some(id => !rosterIds.has(id))) {
@@ -646,7 +647,7 @@ function validBackupState(value: unknown): value is State {
     if (!Object.entries(day.attendance).every(([key, present]) =>
       /^[1-9]\d*$/.test(key) && employeeId(Number(key)) && typeof present === 'boolean')) return false
     if (day.exclusions !== undefined && (!record(day.exclusions) ||
-      !Object.entries(day.exclusions).every(([kind, ids]) => ['ho', 'mail'].includes(kind) &&
+      !Object.entries(day.exclusions).every(([kind, ids]) => ['ho', 'mail', 'backlogs'].includes(kind) &&
         Array.isArray(ids) && ids.every(employeeId) && new Set(ids).size === ids.length))) return false
     for (const swap of day.swaps) {
       if (!record(swap) || !uniqueId(swap.id) || !employeeId(swap.original_employee_id) ||

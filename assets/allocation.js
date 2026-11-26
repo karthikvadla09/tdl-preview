@@ -60,14 +60,15 @@ export function l1StaffingWarnings(queues) {
   return warnings;
 }
 
-export function allocate(day, input, inputHistory) {
+export function allocate(day, input, inputHistory, backlogsExcludedIds = []) {
   const employees = input.map(({sprt, ...employee}) => ({...employee})).sort((a, b) => a.id - b.id);
   const history = inputHistory.filter(row => row.date < day).slice().sort((a, b) => a.date.localeCompare(b.date));
   const start = monday(day), previousStart = addDays(start, -7), previousWeekday = addDays(day, -7);
   const excluded = new Set(history.filter(row => row.queue === 'Backlogs' && row.level === 'L0' && previousStart <= row.date && row.date < start).map(row => row.employee_id));
   const consecutive = restrictedConsecutiveEdsIds(day, employees, history);
+  const backlogsExcluded = new Set(backlogsExcludedIds);
   const eligible = (employee, queue) => queue === 'EDS' ? employee.eds_access && !consecutive.has(employee.id) :
-    queue === 'Backlogs' ? employee.level !== 'L0' || !excluded.has(employee.id) : !restricted(employee);
+    queue === 'Backlogs' ? !backlogsExcluded.has(employee.id) && (employee.level !== 'L0' || !excluded.has(employee.id)) : !restricted(employee);
   const eligibleL0 = Object.fromEntries(['EDS', 'Backlogs'].map(queue => [queue, employees.some(employee => employee.level === 'L0' && eligible(employee, queue))]));
   const byEmployee = new Map();
   for (const row of history) {
@@ -126,7 +127,7 @@ export function allocate(day, input, inputHistory) {
     const candidate = {...state, score};
     if (better(candidate, best)) best = candidate;
   }
-  if (!best) throw new Error('No valid allocation could be found for this attendance list.');
+  if (!best) throw new Error(backlogsExcluded.size ? 'No valid allocation: Backlogs exclusions conflict with attendance or other eligibility rules. Change exclusions or attendance and try again.' : 'No valid allocation could be found for this attendance list.');
   const result = Object.fromEntries(QUEUES.map(queue => [queue, []]));
   employees.forEach((employee, index) => result[best.path[index]].push(employee));
   const warnings = [];

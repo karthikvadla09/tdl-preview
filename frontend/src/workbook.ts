@@ -4,11 +4,11 @@ type Member = { name: string; level: string; sprt?: string }
 type Generation = { status: string; queues: Record<string, Member[]>; warnings: string[]; secondary?: Record<string, Member | null> }
 type DailyExport = {
   date: string; status: string; present_ids: number[]; generation: Generation | null
-  employees: Array<{ id: number; name: string }>; exclusions: { ho: number[]; mail: number[] }
+  employees: Array<{ id: number; name: string }>; exclusions: { ho: number[]; mail: number[]; backlogs?: number[] }
 }
 type WeeklyExport = {
   week_start: string
-  days: Array<{ date: string; status: string; generation: Generation | null }>
+  days: Array<{ date: string; status: string; generation: Generation | null; backlogs_exclusions?: string[] }>
 }
 type Cell = string | number
 
@@ -48,6 +48,7 @@ async function writeWorkbook(
   rows: Cell[][],
   footer: Cell[][] = [],
   screenshare: Cell[][] = [],
+  backlogs: Cell[][] | undefined = undefined,
 ) {
   const { default: ExcelJS } = await import('exceljs')
   const workbook: Workbook = new ExcelJS.Workbook()
@@ -72,6 +73,12 @@ async function writeWorkbook(
   duties.addRows([['Date', 'Queue', 'HO screenshare', 'Level'], ...screenshare])
   duties.getRow(1).font = { bold: true }
   duties.columns.forEach((column, index) => { column.width = index === 2 ? 32 : 14 })
+  if (backlogs) {
+    const exclusions = workbook.addWorksheet('Backlogs exclusions')
+    exclusions.addRows([['Date', 'Backlogs exclusions'], ...backlogs])
+    exclusions.getRow(1).font = { bold: true }
+    exclusions.columns = [{ width: 16 }, { width: 44 }]
+  }
   const buffer = await workbook.xlsx.writeBuffer()
   downloadFile(new Blob([buffer as ArrayBuffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -87,9 +94,9 @@ export function exportDailyWorkbook(day: DailyExport) {
     allocationRows(day.generation),
     [[], ['Validation warnings'], ...day.generation.warnings.map(warning => [warning]), [],
       ['TDL mail sender', dutyName(day.generation, 'TDL mail sender'), day.generation.secondary?.['TDL mail sender']?.level ?? ''],
-      ...(['ho', 'mail'] as const).map(kind => [
-        kind === 'ho' ? 'HO screenshare exclusions' : 'TDL mail exclusions',
-        day.employees.filter(employee => day.exclusions[kind].includes(employee.id)).map(employee => employee.name).join(', '),
+      ...(['ho', 'mail', 'backlogs'] as const).map(kind => [
+        kind === 'ho' ? 'HO screenshare exclusions' : kind === 'mail' ? 'TDL mail exclusions' : 'Backlogs exclusions',
+        day.employees.filter(employee => (day.exclusions[kind] ?? []).includes(employee.id)).map(employee => employee.name).join(', '),
       ])],
     screenshareRows(day.date, day.generation),
   )
@@ -106,5 +113,6 @@ export function exportWeeklyWorkbook(week: WeeklyExport) {
     ['Date', 'Queue', 'Employee', 'Level', 'SPRT', 'Status', 'TDL mail sender'],
     [['TDL – Finalized weekly summary', `Week of ${week.week_start}`], []], rows, [],
     finalized.flatMap(({ date, generation }) => screenshareRows(date, generation)),
+    week.days.filter(day=>day.status==='finalized'&&day.generation?.status==='finalized').map(day=>[day.date, (day.backlogs_exclusions ?? []).join(', ')]),
   )
 }

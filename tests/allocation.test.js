@@ -149,3 +149,18 @@ for (const scenario of policyCases) test(`coverage-first L1 policy: ${scenario.n
   assert.deepEqual(signature(queues),signature(allocate(scenario.day,[...scenario.employees].reverse(),history)[0]));
   assert.equal(JSON.stringify(scenario),before);
 });
+
+test('date-specific Backlogs exclusions block both levels alongside the weekly restriction',()=>{
+  const roster=policyCases.find(c=>c.name==='6 L1s').employees;
+  const history=[{date:'2026-11-17',employee_id:2,level:'L0',queue:'Backlogs'}];
+  const [queues]=allocate('2026-11-24',roster,history,[1,9]);
+  assert(!queues.Backlogs.some(e=>[1,2,9].includes(e.id)));
+  assert.deepEqual(['EDS','MSM','Backlogs'].map(q=>queues[q].filter(e=>e.level==='L1').length),[2,2,2]);
+  const [allExcluded,warnings]=allocate('2026-11-24',roster,[],roster.map(e=>e.id));
+  assert.equal(allExcluded.Backlogs.length,0);
+  assert(warnings.some(w=>w.includes('Backlogs has 0')));
+  for(const level of ['L0','L1'])assert.throws(()=>allocate('2026-11-24',[
+    {id:99,name:'Fictional Restricted',level,eds_access:false,restrictions:'EDS and Backlogs only'},
+  ],[],[99]),/Backlogs exclusions conflict/);
+  assert.deepEqual(signature(allocate('2026-11-24',roster,[])[0]),signature(allocate('2026-11-24',roster,[],[])[0]));
+});
